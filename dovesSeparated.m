@@ -1,7 +1,7 @@
 % load data -- #2
- cd('E:\Data Analysis_2020\2020_0420\')
- fileName = '20200420Bc1.mat';
- saveFile = '20200420Bc1_ONOFF_Doves.mat';
+ cd('E:\Data Analysis_2020\2020_0504\')
+ fileName = '20200504Bc2.mat';
+ saveFile = '20200504Bc2_ONOFFUnknown_Doves.mat';
  load(fileName)
 
 uniqueProtocols = [];
@@ -11,7 +11,7 @@ for z = 1:size(epochs,2)
 %    allEpochData(z,1:length(epochs(z).epoch)) = epochs(z).epoch;
 end
 %find 0s, make index, create new string
-list
+
 while ~isempty(list)
 uniqueProtocols = [uniqueProtocols; list(1)];%OK<AGROW>
 uniqueCheck = strcmp(uniqueProtocols(length(uniqueProtocols)),list);
@@ -105,7 +105,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 5;
+desiredSTD = 10;
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 

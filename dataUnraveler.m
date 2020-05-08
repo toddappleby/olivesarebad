@@ -17,13 +17,11 @@ ONSmoothC = 0;
 OFFSmoothC = 0;
 
 %% load FT first, give different name --- #1
-cd('E:\Data Analysis_2020\2020_0406\')
+cd('E:\Data Analysis_2020\2019_1107\')
 expDate = dir;
-load('20200406Bc1.mat')
+load('20191107Bc3.mat')
 frameTimings = epochs;
-%% now load data -- #2
-
-% load('20200114Bc2.mat')
+%% what protocols contained in data?
 
 uniqueProtocols = [];
 
@@ -54,700 +52,6 @@ saveFlag = 0;
 % cellNum = '1';
 expNum= 1;
 cellName = 'Bc1';
-%% spike detection and save into protocol groups -- NOT IN USE
-
-for s = 1:length(uniqueProtocols)
-    currentProtocol = uniqueProtocols(s); 
-    for b = 1:size(epochs,2)
-        allEpochs(b,:) = epochs(b).epoch;
-        
-    end
-end
-
-%% frame timings and epoch organization -- #3
-count = 0;
-clear monitorStorage
-clear epochStartTime
-clear epochNumFrames
-for f = 1:length(frameTimings)
- 
-     displayName = frameTimings(f).meta.displayName;
-     
-   
-   if strcmp(displayName,'Motion And Noise')
-       
-    count = count+1;
-    singleMonitorRun = frameTimings(f).epoch;
- monitorStorage(count,:) = singleMonitorRun;
- epochStartTime(count) = frameTimings(f).meta.epochTime;
- epochNumFrames(count) = frameTimings(f).meta.epochNum;
-   end
-end
-
-[dates,DI] = sort(epochStartTime);  
-monitorStorage = monitorStorage(DI,:);
-epochNumFrames = epochNumFrames(DI);
-
-
-%%  spike detection and epoch organization -- #4
-
- count = 0;
-clear binnedStorage
-
-clear epochStartTimeD
-
-for i = 1:length(epochs)
-  
-   displayName = epochs(i).meta.displayName;
-   
-   if strcmp(displayName,'Motion And Noise')
-        
-        
-count = count + 1;
-        
-sampleRate = 10000;
-frameRate = 60;
-binRate = 1000;
-preTime = epochs(i).meta.preTime;
-stimTime = epochs(i).meta.stimTime;
-% stimTimes(count)=epochs(i).meta.stimTime;
-stimOrig = stimTime;
-stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
-stimTime = stimTime/1000;
-tailTime = epochs(i).meta.tailTime;
-       
-background = epochs(i).meta.backgroundClass;
-      
-prePts = preTime * 1e-3 * binRate;
-stimPts = epochs(i).meta.stimTime * 1e-3 * binRate;
-        
- singleEpoch = epochs(i).epoch;
-%  binnedRow = binData(singleEpoch,binRate,sampleRate);
-%   binnedRow = binData(singleEpoch(prePts+1:end),binRate,sampleRate);
-% binnedStorage(count,:) = binnedRow(:)';
-binnedStorage(count,:) = singleEpoch;
-%  epochStorage(count,:) = singleEpoch;
- epochNumResponses(count) = epochs(i).meta.epochNum;
- 
-seedList(count) = epochs(i).meta.seed;
-
-epochStartTimeD(count) = epochs(i).meta.epochTime;
-% frameDwell(count) = epochs(i).meta.frameDwell;
-noiseClass(count) = {epochs(i).meta.noiseClass};
-
-        switch background
-            case 'sequential'
-                bgNum = 1;
-            case 'random'
-                bgNum = 2;
-            case 'stationary'
-                bgNum = 3;
-        end
-                bgClass(count,1) = bgNum;
-     
-       end
-
-  end
-     
-spikeMatrix = zeros(size(binnedStorage,1),size(binnedStorage,2)/10);
-spikeMatrixUnbinned = zeros(size(binnedStorage,1),size(binnedStorage,2));
-psthMatrix = zeros(size(binnedStorage,1),size(binnedStorage,2)/10);
-
-desiredSTD = 7; %arbitrary, works for most extracellular data
-
-% binRate = 1000;
-% response(o,:) = binSpikeCount(epoch(o,:)/sampleRate, binRate, sampleRate);
-% response(o,:) = psth(response(o,:)*binRate,6+2/3,binRate,1);
-
-%spike detection
-for k = 1:size(binnedStorage,1)
-    
-[spikes, finalSTD, finalDiscard] = convertSpikesAdree(binnedStorage(k,:), stimTime, ...
-              desiredSTD);
-          
-          if isempty(spikes)
-              disp('deleted epoch')
-          else
-               
-        spikeMatrixUnbinned(k,:) = spikes;
-%         psthMatrix2(k,:) = psth(spikeMatrix(k,:)*10000,6+2/3,10000,1);
-        spikes = binSpikeCount(spikes/sampleRate, binRate, sampleRate);
-        spikes = spikes';
-        spikeMatrix(k,:) = spikes;
-        psthMatrix(k,:) = psth(spikeMatrix(k,:)*binRate,6+2/3,binRate,1);
-%         
-%         spikeMatrix(k,:) = binSpikeCount(spikes/sampleRate, binRate, sampleRate);
-%         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
-        
-          end
-end
-
-%  analysisType = 'extracellular';
-% for k = 1:size(binnedStorage,1)
-%     
-%    spikes = responseByType(epochStorage(k,:), analysisType, preTime, sampleRate);
-%     spikeMatrix(k,:) = binSpikeCount(spikes/sampleRate, binRate, sampleRate);
-%     psthMatrix(k,:) = psth(spikeMatrix(k,:)*binRate,6+2/3,binRate,1);
-% 
-% end
-
-%NOTE: Below uses start time index to bring all data and metadata into
-%register with frametime epochs
-
-[datesD,DI2] = sort(epochStartTimeD);
-spikeMatrix = spikeMatrix(DI2,:);
-spikeMatrixUnbinned = spikeMatrixUnbinned(DI2,:);
-epochNumResponses = epochNumResponses(DI2);
-psthMatrix = psthMatrix(DI2,:);
- bgClass = bgClass(DI2);
- seedList = seedList(DI2);
- noiseClass = noiseClass(DI2);
- binaryIndex = find(contains(noiseClass,'binary'));
- gaussianIndex = find(contains(noiseClass,'gaussian'));
- bgClassOrig = bgClass;
- 
-%% reorganize so indices match between frametimes and responses (now done above..)
-
-% [matches,frameI,stimI] = intersect(epochNumFrames,epochNumResponses);
-% spikeMatrix = spikeMatrix(stimI,:);
-% bgClass = bgClass(stimI);
-% seedList = seedList(stimI);
-% monitorStorage = monitorStorage(frameI,:);
-
-
-
-
-%% Get stim frames -- #5 (standard, using Mike's frame time functions)
-count = 0;
-noiseFlag =1; %1 for gaussian
-clear frameValues;
-clear frameValuesAll;
-clear response1;
-%number of Frames, frame dwell, st dev, seed
-% Note: I almost never change the noise contrast, but will need to deal
-% with binary noise.  That can be done in the initial sort for the most
-% part I think.
-if noiseFlag == 1
-noiseVars = struct();
-noiseVars.type = 'gaussian';
-noiseVars.contrast = 0.3333;
-
-timings = [250,10000,250]; % AUTOMATE THIS LATER
-frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(gaussianIndex,:), 10000, binRate);
-% frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
-frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(gaussianIndex));
-else
-    noiseVars = struct();
-noiseVars.type = 'binary';
-noiseVars.contrast = 0.3333;
-
-timings = [250,10000,250]; % AUTOMATE THIS LATER
-frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(binaryIndex,:), 10000, binRate);
-% frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
-frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(binaryIndex));
-end
-    
-%% Max Turner frame timing stuff -- NOT IN USE
-clear frameTimes
-clear S
-clear R
-clear binnedStimulus
-clear binnedResponse
-stimFrames = round(frameRate * (stimOrig/1e3));
-frameDwell = 1;
-count = 0;
-countSeq = 0;
-linearFilterSeq=0;
-
-% frameTimes = getFrameTiming(monitorStorage(t,:),2);
-% testStim = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frameTimes,1,seedList);
-frameTimesCell = cell(1,size(monitorStorage,1));
-
-for t = 1:size(monitorStorage,1)
-   
-frameTimes = getFrameTiming(monitorStorage(t,:),2); %apparently 2 is for OLED
-frameTimesCell{t} = frameTimes;
-preFrames = frameRate*(preTime/1000);
-firstStimFrameFlip = frameTimes(preFrames);
-spikeSelect = spikeMatrixUnbinned(t,firstStimFrameFlip:end);
-
-noiseStream = RandStream('mt19937ar', 'Seed', seedList(t));
-
-spacerWidth = mean(diff(frameTimes));
-
-    for tt = 1:floor(stimFrames/frameDwell)
-        
-        binnedStimulus(tt) = .3 * noiseStream.randn;
-        binnedResponse(tt) = mean(spikeSelect(1,(round((tt-1)*spacerWidth + 1) : round(tt*spacerWidth))));
-        
-    end
-S(t,:) = binnedStimulus;
-R(t,:) = binnedResponse;
-    
-% mhtFrameValues(t,:) = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,mhtFrames,1,seedList(t));
-end
-
-testStim = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),10000,frameTimesCell,1,seedList);
-
-
-SI=find(bgClass==1);
-lfilterS = getLinearFilter(S(SI,:), R(SI,:), ...
-'analysisType', 'revcorr', ...
-'fourierCorrection', false, ...
-'binRate', spacerWidth, ...
-'filterTime', 0.5, ...
-'frameRate', 60);
-
-for h = 1:size(S,1)
-    
-    if bgClass(h) == 1
-        countSeq = countSeq+1;
-lfResp = spikeMatrixUnbinned(h,:);
-lfStim = testStim(h,:);
-lf = real(ifft( fft(lfResp(:)') .* conj(fft(lfStim(:)')) ));
-
-linearFilterSeq = (linearFilterSeq*(countSeq-1) + lf)/countSeq;
-sortNLSeq(countSeq) = h;
-    end
-end
-
-
-
-% frameValuesAll = mhtFrameValues;
-%% probably superfluous, but does take out 1 seeds
-count = 0;
-clear response1;
-clear frameValues;
-for g = 1:size(binnedStorage,1)
-      if seedList(g) ~= 1
-        
-        count=count+1;
-% frameValRow = getGaussianNoiseFrames((10000/1000) * 60,1,(1/3)*0.3,seedList(g));
-% points per frame? 
-% numP = round(binRate/60);
-% frameValRow = ones(numP,1)*frameValRow(:)';
-% frameValues(count,:) = frameValRow(:);
-
-% response1(count,:) = spikeMatrixUnbinned(g,1:size(frameValuesAll,2));
-
-% response1(count,:) = psthMatrix2(g,:);
-frameValues(count,:) = frameValuesAll(g,:);
-bgClass(count) = bgClass(g);
-
-response1(count,:) = psthMatrix(g,:);
-% frameValues(count,:) = testStim(g,:);
-% bgClass(count) = bgClass(g);
-
-      end
-end
-plotLngth = round(binRate*.5);
-% response1(:,1:floor(binRate/2)) = 0;
-% frameValues(:,1:floor(binRate/2)) = 0;
- bgClass(count+1:end)=[];
-%% just use this for gaussian/binary - #6 (keeps 1 seeds for now)
-plotLngth = round(binRate*.5);
-clear response1
-clear frameValues
-bgClass = bgClassOrig;
-if noiseFlag == 1
-     response1 = psthMatrix(gaussianIndex,:);
- frameValues = frameValuesAll;
- bgClass = bgClass(gaussianIndex,:);
-else
- response1 = psthMatrix(binaryIndex,:);
- frameValues = frameValuesAll;
- bgClass = bgClass(binaryIndex,:);
-end
-%% correlation stuff -- #7
-clear seqParams
-linearFilter = 0;
-linearFilterSeq = 0;
-linearFilterRandom = 0;
-linearFilterStatic = 0;
-linearFilterNew = 0;
-countSeq =0;
-countR = 0;
-countStatic =0;
-sortNLSeq=0;
-sortNLRand=0;
-sortNLStatic=0;
-for h = 1:size(response1,1)
-    
-    if bgClass(h) == 1
-        countSeq = countSeq+1;
-lfResp = response1(h,:);
-lfStim = frameValues(h,:);
-lf = real(ifft( fft(lfResp(:)') .* conj(fft(lfStim(:)')) ));
-
-linearFilterSeq = (linearFilterSeq*(countSeq-1) + lf)/countSeq;
-sortNLSeq(countSeq) = h;
-
-
-    elseif bgClass(h) == 2
-        countR = countR+1;
-lfResp = response1(h,:);
-lfStim = frameValues(h,:);
-lf = real(ifft( fft(lfResp(:)') .* conj(fft(lfStim(:)')) ));
-
-linearFilterRandom = (linearFilterRandom*(countR-1) + lf)/countR;
-sortNLRand(countR) = h;
-
-    elseif bgClass(h) == 3
-        countStatic = countStatic + 1;
-lfResp = response1(h,:);
-lfStim = frameValues(h,:);
-lf = real(ifft( fft(lfResp(:)') .* conj(fft(lfStim(:)')) ));
-
-linearFilterStatic = (linearFilterStatic*(countStatic-1) + lf)/countStatic;
-sortNLStatic(countStatic) = h;
-
-    end
-        
-end
-
-%normalize to scale the filters 
-linearFilterSeq = linearFilterSeq/norm(linearFilterSeq);
-linearFilterRandom = linearFilterRandom/norm(linearFilterRandom);
-linearFilterStatic = linearFilterStatic/norm(linearFilterStatic);
-
-%fits for filters using Obsidian functions 
-     seqParams = fitLinearFilterParams(linearFilterSeq,binRate);
-     filterSeq = linearFilterFunction(seqParams,(1:plotLngth)/binRate);
-     figure(7)
-     plot((1:plotLngth)/binRate, filterSeq,'LineWidth',2,'Color','r')
-     hold on
-     
-     randomParams = fitLinearFilterParams(linearFilterRandom,binRate);
-     filterRand = linearFilterFunction(randomParams,(1:plotLngth)/binRate);
-     plot((1:plotLngth)/binRate, filterRand,'LineWidth',2,'Color','b')
-     
-     staticParams = fitLinearFilterParams(linearFilterStatic,binRate);
-     filterStatic = linearFilterFunction(staticParams,(1:plotLngth)/binRate);
-     plot((1:plotLngth)/binRate, filterStatic,'LineWidth',2,'Color','k')
-     set(gca,'xdir','reverse')
-     legend('sequential','random','static','location','northwest')
-     ylabel('weight')
-     xlabel('time (s)')
-     
-%      figure(11)
-%      plot((1:plotLngth)/binRate,linearFilterNew)
-     
-
-     
-%% plotlf - raw filters #8
-
-figure(6)
-clf
-plot((1:plotLngth)/binRate, linearFilterSeq(1:plotLngth),'Color','r')
-hold on
-line((1:plotLngth)/binRate, linearFilterRandom(1:plotLngth),'Color','b')
-line((1:plotLngth)/binRate, linearFilterStatic(1:plotLngth),'Color','k')
-set(gca,'xdir','reverse')
-title('linear filters for each surround condition')
-legend('Sequential','Random','Static','Location','northwest')
-xlabel('time(s)')
-ylabel('weight')
-set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inches', 'PaperSize', [7.25, 9.125],'Color','w')
-export_fig 'noiseNL.pdf'
-
- if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    OFFParasolC = OFFParasolC+1;
-    
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).Name = cellName;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).Date = epochs(1).meta.epochTime;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.X= ((1:plotLngth)/binRate);
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.Seq = linearFilterSeq;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.Rand = linearFilterRandom;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.Static = linearFilterStatic;
- elseif saveFlag ==1 && strcmp(cellType,'ON Parasol')
-    ONParasolC = ONParasolC+1;
-    
-    MNONParasol.Exp(expNum).Cell(ONParasolC).Name = cellName;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).Date = epochs(1).meta.epochTime;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.X= (1:plotLngth)/binRate;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.Seq = linearFilterSeq;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.Rand = linearFilterRandom;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.Static = linearFilterStatic;
- elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-    ONSmoothC = ONSmoothC+1;
-     
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).Name = cellName;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).Date = epochs(1).meta.epochTime;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.X= (1:plotLngth)/binRate;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.Seq = linearFilterSeq;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.Rand = linearFilterRandom;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.Static = linearFilterStatic;
- elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    OFFSmoothC = ONSmoothC+1;
-     
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).Name = cellName;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).Date = epochs(1).meta.epochTime;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.X= (1:plotLngth)/binRate;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.Seq = linearFilterSeq;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.Rand = linearFilterRandom;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.Static = linearFilterStatic;
- end
-%% tests to see if Mike's filter function changes anything (doesn't seem to)
-SI=find(bgClass==1);
-lfilterS = getLinearFilter(frameValues(SI,:), response1(SI,:), ...
-'analysisType', 'revcorr', ...
-'fourierCorrection', false, ...
-'binRate', binRate, ...
-'filterTime', 0.5, ...
-'frameRate', 60);
-
-RI = find(bgClass==2);
-
-lfilterR = getLinearFilter(frameValues(RI,:), response1(RI,:), ...
-'analysisType', 'revcorr', ...
-'fourierCorrection', false, ...
-'binRate', binRate, ...
-'filterTime', 0.5, ...
-'frameRate', 60);
-
-StI = find(bgClass==3);
-
-lfilterSt = getLinearFilter(frameValues(StI,:), response1(StI,:), ...
-'analysisType', 'revcorr', ...
-'fourierCorrection', false, ...
-'binRate', binRate, ...
-'filterTime', 0.5, ...
-'frameRate', 60);
-
-figure(12)
-plot(lfilterS(1:5000),'Color','r')
-hold on
-plot(lfilterR(1:5000),'Color','b')
-plot(lfilterSt(1:5000),'Color','k')
-set(gca,'xdir','reverse')
-%% start NL 
-stimExtent = prePts + (1:stimPts);
-xaxis=0;
-clear respStore;
-clear pred2Store;
-
-nonlinearityBins = 100;
-
-%Convolve stimulus with filter to get generator signal.
-seqInd = find(bgClass==1); seqFV = frameValues(sortNLSeq,:);
-seqR = response1(sortNLSeq,:);
-
- for p = 1:size(seqFV,1)
-
-yaxis=0;
-xaxis = 0;
-pred=0;
-resp=0;
-
-
-pred = ifft(fft(seqFV(p,:)) .* fft(linearFilterSeq(:)'));
-resp = binData(seqR(p,:), 60, binRate);
-yaxis = [yaxis, resp(:)'];
-yaxisStore(p,:) = yaxis;
-pred2Store(p,:)=pred;
-pred = binData(pred,60,binRate);
-pred=pred(:)';
-predStore(p,:)=pred;
-respStore(p,:)=[seqR(p,:) zeros(1,100)];
-
-xaxis = [xaxis, pred(1 : length(resp))];
-[a, b] = sort(xaxis(:));
- xSort = a;
- ySort = yaxis(b);
-   % Bin the data.
- valsPerBin = floor(length(xSort) / nonlinearityBins);
- xBin = mean(reshape(xSort(1 : nonlinearityBins*valsPerBin),valsPerBin,nonlinearityBins));
- yBin = mean(reshape(ySort(1 : nonlinearityBins*valsPerBin),valsPerBin,nonlinearityBins));
- 
- xBinHolder(p,:) = xBin;
- yBinHolder(p,:) = yBin;
- 
- end
-
- huhx = mean(xBinHolder);
- huhy = mean(yBinHolder);
- figure(8);
- clf
- 
- plot(huhx*10,huhy*10000,'Color','r')
-% axis([-.5 1 0 100])
- hold on
-%  predStore(:,stimExtent(501:end))
-% [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(1:9770)),respStore(:,stimExtent(1:9770)),nonlinearityBins);
-[xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(:)),respStore(:,stimExtent(:)),nonlinearityBins);
- nlParams = fitNonlinearityParams(xfBin, yfBin);
- nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
- figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX),'Color','r','LineWidth',2)
- hold on
- 
- if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.X = nlX;
-    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Seq = outputNonlinearity(nlParams,nlX);
- elseif saveFlag ==1 && strcmp(cellType,'ON Parasol')
-    MNONParasol.Exp(expNum).Cell(ONParasolC).NL.X = nlX;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Seq = outputNonlinearity(nlParams,nlX);
- elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.X = nlX;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Seq = outputNonlinearity(nlParams,nlX);
- elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.X = nlX;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Seq = outputNonlinearity(nlParams,nlX);
- end
- 
-%% random NL 
-
-xaxis=0;
-
-nonlinearityBins = 100;
-
-%Convolve stimulus with filter to get generator signal.
-randInd = find(bgClass==2); randFV = frameValues(sortNLRand,:);
-randR = response1(sortNLRand,:);
-
- for p = 1:size(randFV,1)
-
-yaxis=0;
-xaxis = 0;
-pred=0;
-resp=0;
-pred = ifft(fft(randFV(p,:)) .* fft(linearFilterRandom(:)'));
-resp = binData(randR(p,:), 60, binRate);
-yaxis = [yaxis, resp(:)'];
-yaxisStore(p,:) = yaxis;
-pred2Store(p,:)=pred;
-pred = binData(pred,60,binRate);
-pred=pred(:)';
-predStore(p,:)=pred;
-respStore(p,:)=[randR(p,:) zeros(1,100)];
-
-xaxis = [xaxis, pred(1 : length(resp))];
-[a, b] = sort(xaxis(:));
- xSort = a;
- ySort = yaxis(b);
-   % Bin the data.
- valsPerBin = floor(length(xSort) / nonlinearityBins);
- xBin = mean(reshape(xSort(1 : nonlinearityBins*valsPerBin),valsPerBin,nonlinearityBins));
- yBin = mean(reshape(ySort(1 : nonlinearityBins*valsPerBin),valsPerBin,nonlinearityBins));
- 
- xBinHolder(p,:) = xBin;
- yBinHolder(p,:) = yBin;
- 
- end
-
- huhx = mean(xBinHolder);
- huhy = mean(yBinHolder);
- %axis([0 600 0 10*10^-3])
- figure(8)
- plot(huhx*10,huhy*10000,'Color','b')
- [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(:)),respStore(:,stimExtent(:)),nonlinearityBins);
-%  [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(1:9770)),respStore(:,stimExtent(1:9770)),nonlinearityBins);
- nlParams = fitNonlinearityParams(xfBin, yfBin);
- nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
- figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX),'Color','b','LineWidth',2)
- hold on
- 
- if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-   MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Rand = outputNonlinearity(nlParams,nlX);
-   elseif saveFlag ==1 && strcmp(cellType,'ON Parasol')
-   MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Rand = outputNonlinearity(nlParams,nlX);
-   elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-   
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Rand = outputNonlinearity(nlParams,nlX);
-   elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Rand = outputNonlinearity(nlParams,nlX);
- end
-%% stationary NL 
-
-xaxis=0;
-
-nonlinearityBins = 100;
-
-%Convolve stimulus with filter to get generator signal.
-staticInd = find(bgClass==3); staticFV = frameValues(sortNLStatic,:);
-staticR = response1(sortNLStatic,:);
-
- for p = 1:size(staticFV,1)
-
-yaxis=0;
-xaxis = 0;
-pred=0;
-resp=0;
-pred = ifft(fft(staticFV(p,:)) .* fft(linearFilterStatic(:)'));
-resp = binData(staticR(p,:), 60, binRate);
-yaxis = [yaxis, resp(:)'];
-yaxisStore(p,:) = yaxis;
-pred2Store(p,:)=pred;
-pred = binData(pred,60,binRate);
-pred=pred(:)';
-predStore(p,:)=pred;
-respStore(p,:)=[staticR(p,:) zeros(1,100)];
-
-xaxis = [xaxis, pred(1 : length(resp))];
-[a, b] = sort(xaxis(:));
- xSort = a;
- ySort = yaxis(b);
-   % Bin the data.
- valsPerBin = floor(length(xSort) / nonlinearityBins);
- xBin = mean(reshape(xSort(1 : nonlinearityBins*valsPerBin),valsPerBin,nonlinearityBins));
- yBin = mean(reshape(ySort(1 : nonlinearityBins*valsPerBin),valsPerBin,nonlinearityBins));
- 
- xBinHolder(p,:) = xBin;
- yBinHolder(p,:) = yBin;
- 
- end
-
- huhx = mean(xBinHolder);
- huhy = mean(yBinHolder);
- figure(8)
- plot(huhx*10,huhy*10000,'Color','k')
-%   axis([0 400 0 4*10^-3])
- hold on
- legend('sequential','random','static','location','northwest')
- title('NL for each surround condition')
- xlabel('input','FontSize',18)
- ylabel('spikes/s','FontSize',18)
-set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inches', 'PaperSize', [7.25, 9.125],'Color','w')
-export_fig 'noiseNL.pdf' -append
-
-[xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(:)),respStore(:,stimExtent(:)),nonlinearityBins);
-%  [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(1:9770)),respStore(:,stimExtent(1:9770)),nonlinearityBins);
- nlParams = fitNonlinearityParams(xfBin, yfBin);
- nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
- figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX),'Color','k','LineWidth',2)
-  legend('sequential','random','static','location','northwest')
-  xlabel('input')
-  ylabel('spikes/s')
-
-if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Static = outputNonlinearity(nlParams,nlX);
-elseif saveFlag == 1 && strcmp(cellType,'ON Parasol')
-    MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Static = outputNonlinearity(nlParams,nlX);
-elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Static = outputNonlinearity(nlParams,nlX);
-elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Static = outputNonlinearity(nlParams,nlX);
-end
-
-%  x=-300:400;
-% nlfun = @(p,x)(p(1)*normcdf(p(2)*x+p(3),0,1));
-% p = nlinfit(huhx,huhy,nlfun,[5 50 0]);
-% 
-% 
-% 
-% plot(xBin,yBin,'.');
-% plot(x,nlfun(p,x));
-% hold off;
-
-%% final save
-cd('/Users/toddappleby/Documents/Data/Clarinet Exports/SavedData')
-save('MotionandNoise.mat','MNOFFParasol')
-save('MotionandNoise.mat','-append','MNONParasol')
-save('MotionandNoise.mat',',-append','MNONSmooth')
-save('MotionandNoise.mat','-append','MNOFFSmooth')
 %% Contrast Response Function
 count = 0;
 clear epochStorage
@@ -824,13 +128,15 @@ clear epochStorage
 stringComparer = [];
 stringComparer = string(stringComparer);
 for i = 1:length(epochs)
+    
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
-
+   
    if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,'Control')
-        
+    temporalClass = epochs(i).meta.temporalClass;
+    if strcmp(temporalClass,'sinewave')
         count = count + 1;
         for s = 1:length(splitFactors)
             if ischar(getfield(epochs(i).meta,splitFactors(s)))
@@ -851,6 +157,7 @@ tfreq(count) = epochs(i).meta.temporalFrequency;
         stimTime = epochs(i).meta.stimTime;
         tailTime = epochs(i).meta.tailTime;
 %         angleO(count) = epochs(i).meta.orientation;
+    end
    end
 end
 
@@ -878,7 +185,7 @@ for m = 1:size(splitCell,2)-1
            strInd = find(splitCell{2,m}==uniqueStrings(n));
            replacer(strInd) = n;
         end
-        holdList(:,m) = splitCell{2,m};
+%         holdList(:,m) = splitCell{2,m};
         splitCell{2,m}=replacer;
     end
 end
@@ -982,7 +289,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 5;
+desiredSTD = 8;
 if ~isempty(epochStorageX)
     spikeMatrixX = zeros(size(epochStorageX,1),size(epochStorageX,2));
     psthMatrixX = zeros(size(epochStorageX,1),size(epochStorageX,2));
@@ -1026,82 +333,6 @@ end
 timings = [preTime stimOrig tailTime];
 
 centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,sampleRate)
-%% Motion center surround
- 
-
-count = 0;
-clear epochStorage 
-clear bgClass
-clear centerClass
-clear contrastState
-
-for i = 1:length(epochs)
-  
-   displayName = epochs(i).meta.displayName;
-   recordingTechnique = epochs(i).meta.recordingTechnique;
-   egLabel = epochs(i).meta.epochGroupLabel;
-   if strcmp(displayName,'Motion Center Surround') && ~strcmp(recordingTechnique,'whole-cell') && strcmp(egLabel,'Control')
-        width = epochs(i).meta.surroundBarWidth;
-        if width <= 100
-        protocolExample = i;
-        count = count + 1;
-        epochStorage(count,:) = epochs(i).epoch;
-        background = epochs(i).meta.backgroundClass;
-        contrast = epochs(i).meta.contrast;
-        center = epochs(i).meta.centerClass;
-        switch background
-            case 'sequential'
-                bgNum = 1;
-            case 'random'
-                bgNum = 2;
-            case 'stationary'
-                bgNum = 3;
-        end
-        switch center
-            case 'sequential'
-                cNum = 1;
-            case 'random'
-                cNum = 2;
-            case 'sequential180'
-                cNum = 3;
-        end
-        bgClass(count,1) = bgNum;
-        centerClass(count,1) = cNum; 
-        contrastState(count,1) = contrast;
-        end
-   end
-end
-
-saveGraph = 0;
-[meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph);
-
-
-
-if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    OFFParasolC = OFFParasolC + 1;
-CMSOFFParasol(OFFParasolC,:) = meanCollection;
-    elseif saveFlag == 1 && strcmp(cellType,'ON Parasol')
-            ONParasolC = ONParasolC + 1;
-            CMSONParasol(ONParasolC,:) = meanCollection;
-        elseif saveFlag == 1 && strcmp(cellType,'ON Smooth')
-                ONSmoothC = ONSmoothC + 1;
-                CMSONSmooth(ONSmoothC,:) = meanCollection;
-            elseif saveFlag == 1 && strcmp(cellType,'OFF Smooth')
-                    OFFSmoothC = OFFSmoothC + 1;
-                    CMSOFFSmooth(OFFSmoothC,:) = meanCollection;
-end
-
-
-if saveFlag == 1
-testSave = strcat(expDate(3).name(1:8),'_CMS');
-    cd('/Users/toddappleby/Documents/Data/Clarinet Exports/SavedData')
-    save(testSave,'CMSOFFParasol')
-    save(testSave,'-append','CMSONParasol')
-    save(testSave,'-append','CMSONSmooth')
-    save(testSave,'-append','CMSOFFSmooth')
-end
-
-
 %% LED Pulse
 
 %this isn't as flexible because character vectors are hellworld
@@ -1194,7 +425,8 @@ params.stimName = 'LED';
 timings = [preTime stimOrig tailTime];
 LED(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% Expanding Spots
-
+dataType = 1; %0 if currents
+nameCurrent = "Whole cell_exc"; % either Whole cell_exc or Whole cell_inh
 splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"];
 runSplitter = ["currentSpotSize"]; %might just set this manually because not gonna change? number could change if the protocol run was cut short
 %this is why Greg did this the way he did .... maybe.  gonna have to figure
@@ -1209,7 +441,7 @@ end
 count = 0;
 clear epochStorage 
 
-
+if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
@@ -1233,6 +465,31 @@ for i = 1:length(epochs)
    end
 end
 
+else
+    for i = 1:length(epochs)
+  
+   displayName = epochs(i).meta.displayName;
+   egLabel = epochs(i).meta.epochGroupLabel;
+   recording = epochs(i).meta.recordingTechnique;
+       if strcmp(displayName,'Expanding Spots') && strcmp(egLabel,'Whole cell_exc')
+
+            count = count + 1;
+            for s = 1:length(splitFactors)
+            splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+            end
+
+    %         width(count) = epochs(i).meta.barWidth;
+            epochStorage(count,:) = epochs(i).epoch;
+    %         apertureRadius(count) = epochs(i).meta.apertureRadius;
+    %         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
+            preTime = epochs(i).meta.preTime;
+            stimTime = epochs(i).meta.stimTime;
+            tailTime = epochs(i).meta.tailTime;
+    %         angleO(count) = epochs(i).meta.orientation;
+       end
+    end
+end
+    
 stimOrig = stimTime;
 sampleRate = 10000;
 % preTime = epochs(1).meta.preTime;
@@ -1270,22 +527,33 @@ while ~isempty(combos)
     combos(1,:) = [];
 end
 
+if dataType == 1
+    for k = 1:size(epochStorage,1)
 
-for k = 1:size(epochStorage,1)
+    [spikes, finalSTD, finalDiscard] = convertSpikesAdree(epochStorage(k,:), stimTime, ...
+                  desiredSTD);
+              if isempty(spikes)
+                  disp('deleted epoch')
+              else
+            spikeMatrix(k,:) = spikes;
+            psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
+              end
+    end
+
+else
+
     
-[spikes, finalSTD, finalDiscard] = convertSpikesAdree(epochStorage(k,:), stimTime, ...
-              desiredSTD);
-          if isempty(spikes)
-              disp('deleted epoch')
-          else
-        spikeMatrix(k,:) = spikes;
-        psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
-          end
+
+    for k = 1:size(epochStorage,1)
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+    end
 end
 timings = [preTime stimOrig tailTime];
 params = struct();
 params.saveGraph = 0;
 params.stimName = 'expanding';
+params.dataType = dataType;
 % saveGraph = 0;
 % stimName = 'Grating';
 simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
@@ -1390,7 +658,7 @@ params.stimName = 'Grating';
 % stimName = 'Grating';
 orientedStim(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% Oriented Bars
-
+dataType = 1; %0 if currents
 splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
@@ -1405,15 +673,27 @@ end
 
 count = 0;
 clear epochStorage;
-
+count2 =0;
+if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
    recordingTechnique = epochs(i).meta.recordingTechnique;
-   if strcmp(displayName,'Oriented Bars') && ~strcmp(recordingTechnique,'whole-cell') && ~strcmp(recordingTechnique,'EXCITATION') && ~strcmp(recordingTechnique,'INHIBITION')
+    egLabel = epochs(i).meta.epochGroupLabel;
+   if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,'Control')
         
         for s = 1:length(splitFactors)
-        splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+            barSizeFind = contains(splitFactors,'barSize');
+            if barSizeFind(s)
+                count2=count2+1;
+               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
+               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
+               barSizeCombined = str2num(strTransferTicket);
+               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
+            else
+               splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+            end
+        
         end
        
         count = count + 1;
@@ -1424,6 +704,40 @@ for i = 1:length(epochs)
         tailTime = epochs(i).meta.tailTime;
       
    end
+end
+
+else
+    for i = 1:length(epochs)
+  
+   displayName = epochs(i).meta.displayName;
+   egLabel = epochs(i).meta.epochGroupLabel;
+   recording = epochs(i).meta.recordingTechnique;
+       if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,'Whole cell_exc')
+            barSizeFind = contains(splitFactors,'barSize');
+          for s = 1:length(splitFactors)
+            if barSizeFind(s)
+                count2=count2+1
+               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
+               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
+               barSizeCombined = str2num(strTransferTicket);
+               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
+            else
+            splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+           
+            end
+          end
+            count = count + 1;
+    %         width(count) = epochs(i).meta.barWidth;
+            epochStorage(count,:) = epochs(i).epoch;
+    %         apertureRadius(count) = epochs(i).meta.apertureRadius;
+    %         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
+            intensity(count) = epochs(i).meta.intensity;
+            preTime = epochs(i).meta.preTime;
+            stimTime = epochs(i).meta.stimTime;
+            tailTime = epochs(i).meta.tailTime;
+    %         angleO(count) = epochs(i).meta.orientation;
+       end
+    end
 end
 
 stimOrig = stimTime;
@@ -1461,7 +775,7 @@ while ~isempty(combos)
     combos(1,:) = [];
 end
 
-
+if dataType ==1
 for k = 1:size(epochStorage,1)
     
 [spikes, finalSTD, finalDiscard] = convertSpikesAdree(epochStorage(k,:), stimTime, ...
@@ -1472,6 +786,13 @@ for k = 1:size(epochStorage,1)
         spikeMatrix(k,:) = spikes;
         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
+end
+
+else   
+    for k = 1:size(epochStorage,1)
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+    end
 end
 
 params = struct();
@@ -1504,7 +825,15 @@ for i = 1:length(epochs)
    if strcmp(displayName,'Moving Bar') && ~strcmp(recordingTechnique,'whole-cell') && ~strcmp(recordingTechnique,'EXCITATION') && ~strcmp(recordingTechnique,'INHIBITION') 
         
         for s = 1:length(splitFactors)
-        splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+            barSizeFind = contains(splitFactors,'barSize');
+            if barSizeFind(s)
+               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
+               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)));
+               barSizeCombined = str2num(strTransferTicket);
+               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
+            else
+               splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+            end
         end
        
         count = count + 1;
@@ -1523,7 +852,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 6;
+desiredSTD = 4;
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -2172,11 +1501,22 @@ spotIntensityPlace = find(strcmp(analysisSplitters,"spotIntensity")==1);
             onResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
             offResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));                
             
+            if params.dataType ==1
             psthData(b,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
             figure(10); hold on
             subplot(1,size(indexHolder,2),a)
             plot(psthData(b,:)+(100*(b-1)))
             title(indexHolder{1,a})
+            else
+            psthData(b,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+            figure(10); hold on
+            subplot(1,size(indexHolder,2),a)
+            plot(psthData(b,:)+(100*(b-1)))
+            title(indexHolder{1,a})
+            end
+            
+            
+            
          end
         
          

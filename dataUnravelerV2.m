@@ -30,13 +30,13 @@ expNum= 11;
 cellName = 'Bc8';
 
 % load FT first, give different name --- #1
-cd('E:\Data Analysis_2020\2020_0318\')
+cd('E:\Data Analysis_2020\2019_1107\')
 
-load('20200318Bc4_FT.mat')
+load('20191107Bc6_FT.mat')
 frameTimings = epochs;
 expDate = dir;
 % now load data -- #2
-load('20200318Bc4.mat')
+load('20191107Bc6.mat')
 
 uniqueProtocols = [];
 
@@ -45,6 +45,7 @@ for z = 1:size(epochs,2)
 %    allEpochData(z,1:length(epochs(z).epoch)) = epochs(z).epoch;
 end
 %find 0s, make index, create new string
+tic
 while ~isempty(list)
 uniqueProtocols = [uniqueProtocols; list(1)];%OK<AGROW>
 uniqueCheck = strcmp(uniqueProtocols(length(uniqueProtocols)),list);
@@ -57,7 +58,7 @@ rawData{length(uniqueProtocols),1} = uniqueProtocols(length(uniqueProtocols));
 % rawData{length(uniqueProtocols),2} = protocolData;
 % allEpochData = allEpochData(newIndex,:);
 end
-
+toc
 uniqueProtocols = sort(uniqueProtocols) %#ok<NOPTS>
 
 
@@ -129,7 +130,11 @@ binnedStorage(count,:) = singleEpoch;
 seedList(count) = epochs(i).meta.seed;
 
 epochStartTimeD(count) = epochs(i).meta.epochTime;
+if isfield(epochs(i).meta,'frameDwell')
 frameDwell(count) = epochs(i).meta.frameDwell;
+else
+    frameDwell(count)=1;
+end
 noiseClass(count) = {epochs(i).meta.noiseClass};
 barWidth(count) = epochs(i).meta.barWidth;
 apRadius(count) = epochs(i).meta.apertureRadius;
@@ -152,7 +157,7 @@ spikeMatrix = zeros(size(binnedStorage,1),size(binnedStorage,2)/10);
 spikeMatrixUnbinned = zeros(size(binnedStorage,1),size(binnedStorage,2));
 psthMatrix = zeros(size(binnedStorage,1),size(binnedStorage,2)/10);
 
-desiredSTD = 7; %arbitrary, works for most extracellular data
+desiredSTD = 9; %arbitrary, works for most extracellular data
 
 % binRate = 1000;
 % response(o,:) = binSpikeCount(epoch(o,:)/sampleRate, binRate, sampleRate);
@@ -206,10 +211,13 @@ barOrientation = barOrientation(DI2);
  bgClass = bgClass(DI2);
  seedList = seedList(DI2);
  noiseClass = noiseClass(DI2);
- binaryIndex = find(contains(noiseClass,'binary'));
- gaussianIndex = find(contains(noiseClass,'gaussian'));
+%  binaryIndex = find(contains(noiseClass,'binary'));
+%  gaussianIndex = find(contains(noiseClass,'gaussian'));
+ binaryIndex = contains(noiseClass,'binary');
+gaussianIndex = contains(noiseClass,'gaussian');
+
  bgClassOrig = bgClass;
- %% split by protocol variable...somehow
+%% split by protocol variable...somehow
  %run unique(apRadius) or unique(barWidth)
 %  splitter = 300;
 % splitIndex = find(apRadius == splitter);
@@ -221,16 +229,23 @@ barOrientation = barOrientation(DI2);
 % gaussianIndex = gaussianIndex(splitIndex);
 % binaryIndex = binaryIndex(splitIndex);
  
-splitter2 = 270;
+% NOTE: THIS DOES NOT WORK IF GAUSSIAN AND BINARY ARE BEING SORTED BY SAME
+% FRAME DWELL (you'll get logical 1s in binaryIndex where it's actually
+% gaussian noise)
+
+splitter2 = 180;
 
 
 
 
 splitIndex2 = barOrientation==splitter2;
-bgClass = bgClass(splitIndex2>0);
-binaryIndex = binaryIndex(splitIndex2>0);     
- 
- 
+% bgClass = bgClass(splitIndex2>0);
+binaryIndex = splitIndex2==1;     
+% frameDwell = frameDwell(splitIndex2);
+
+%% fake logicals
+gaussianIndex(10:end) = false;
+
  %% Get stim frames -- #5 (standard, using Mike's frame time functions)
 count = 0;
 noiseFlag =0; %1 for gaussian
@@ -249,7 +264,7 @@ noiseVars.contrast = 0.3333;
 timings = [250,10000,250]; % AUTOMATE THIS LATER
 frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(gaussianIndex,:), 10000, binRate);
 % frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
-frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(gaussianIndex));
+frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(gaussianIndex),frameDwell(gaussianIndex));
 else
     noiseVars = struct();
 noiseVars.type = 'binary';
@@ -258,7 +273,7 @@ noiseVars.contrast = 0.3333;
 timings = [250,10000,250]; % AUTOMATE THIS LATER
 frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(binaryIndex,:), 10000, binRate);
 % frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
-frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(binaryIndex));
+frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(binaryIndex),frameDwell(binaryIndex));
 end
 
 % just use this for gaussian/binary - #6 (keeps 1 seeds for now)
@@ -462,7 +477,7 @@ xaxis = [xaxis, pred(1 : length(resp))];
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX),'Color','r','LineWidth',2)
+ plot(nlX,outputNonlinearity(nlParams,nlX)*10000,'Color','r','LineWidth',2)
  hold on
  
  if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
@@ -529,7 +544,7 @@ xaxis = [xaxis, pred(1 : length(resp))];
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX),'Color','b','LineWidth',2)
+ plot(nlX,outputNonlinearity(nlParams,nlX)*10000,'Color','b','LineWidth',2)
  hold on
  
  if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
@@ -601,7 +616,7 @@ set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inch
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX),'Color','k','LineWidth',2)
+ plot(nlX,outputNonlinearity(nlParams,nlX)*10000,'Color','k','LineWidth',2)
   legend('sequential','random','static','location','northwest')
   xlabel('input')
   ylabel('spikes/s')
@@ -648,13 +663,16 @@ for i = 1:length(epochs)
    egLabel = epochs(i).meta.epochGroupLabel;
    if strcmp(displayName,'Motion Center Surround') && ~strcmp(recordingTechnique,'whole-cell') && strcmp(egLabel,'Control')
         width = epochs(i).meta.surroundBarWidth;
-        if width <= 100
+          surroundOrientation = epochs(i).meta.surroundBarOrientation;
+        if width <= 100 && surroundOrientation == 90
         protocolExample = i;
         count = count + 1;
         epochStorage(count,:) = epochs(i).epoch;
         background = epochs(i).meta.backgroundClass;
         contrast = epochs(i).meta.contrast;
         center = epochs(i).meta.centerClass;
+     
+        
         switch background
             case 'sequential'
                 bgNum = 1;
@@ -814,7 +832,7 @@ stimOrig = stimTime;
 motionTime = epochs(protocolExample).meta.motionTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 5.5;
+desiredSTD = 9;
 % spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 % psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
