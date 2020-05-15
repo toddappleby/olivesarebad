@@ -17,9 +17,9 @@ ONSmoothC = 0;
 OFFSmoothC = 0;
 
 %% load FT first, give different name --- #1
-cd('E:\Data Analysis_2020\2019_1107\')
+cd('E:\Data Analysis_2020\2019_0620\')
 expDate = dir;
-load('20191107Bc3.mat')
+load('20190620Bc3.mat')
 frameTimings = epochs;
 %% what protocols contained in data?
 
@@ -110,13 +110,96 @@ else
     CRF(spikeMatrix,psthMatrix,contrast,timings,saveStuff,[],[])
 end
 
+%% chirp regurgitation
+dataType = 1;
+clear epochStorage
 
-%% MTF spots and annuli 
+count =0;
+
+ 
+if dataType == 1
+for i = 1:length(epochs)
+   displayName = epochs(i).meta.displayName;
+
+   recordingTechnique = epochs(i).meta.recordingTechnique;
+
+   egLabel = epochs(i).meta.epochGroupLabel;
+   if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis;
+   end
+
+
+   if strcmp(displayName,'Chirp Stimulus') && ~strcmp(recordingTechnique,'whole-cell') && strcmp(egLabel,'Control')
+count = count + 1;
+epochStorage(count,:) = epochs(i).epoch;
+
+% contrast(count) = epochs(i).meta.contrast;
+
+preTime = epochs(i).meta.preTime;
+
+stimTime = epochs(i).meta.stimTime;
+
+tailTime = epochs(i).meta.tailTime;
+
+   
+
+ 
+
+   end
+
+end
+else
+  for i = 1:length(epochs)
+   displayName = epochs(i).meta.displayName;
+
+   recordingTechnique = epochs(i).meta.recordingTechnique;
+
+   egLabel = epochs(i).meta.epochGroupLabel;
+
+   if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis;
+   end
+
+   if strcmp(displayName,'Chirp Stimulus') && strcmp(oAnalysis,'analog')
+count = count + 1;
+epochStorage(count,:) = epochs(i).epoch;
+
+% contrast(count) = epochs(i).meta.contrast;
+
+preTime = epochs(i).meta.preTime;
+
+stimTime = epochs(i).meta.stimTime;
+
+tailTime = epochs(i).meta.tailTime;
+
+   
+
+ 
+
+        end
+
+    end  
+end
+
+for z = 1:size(epochStorage,1)
+
+plot(epochStorage(z,:))
+
+hold on
+
+end
+
+
+    
+
+%% MTF spots and annuli
 
 splitFactors = ["stimulusClass","temporalFrequency","temporalClass","radius"];
 runSplitter = ["radius"]; 
 
 splitCell = cell(2,length(splitFactors));
+
+desiredSTD = 6;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -134,7 +217,11 @@ for i = 1:length(epochs)
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
    
-   if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,'Control')
+  if isfield(epochs(i).meta,'onlineAnalysis')
+      oAnalysis = epochs(i).meta.onlineAnalysis;
+  end
+   
+   if strcmp(displayName,'S MT Fspot') && strcmp(oAnalysis,'extracellular') 
     temporalClass = epochs(i).meta.temporalClass;
     if strcmp(temporalClass,'sinewave')
         count = count + 1;
@@ -167,7 +254,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 5;
+
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -426,11 +513,15 @@ timings = [preTime stimOrig tailTime];
 LED(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% Expanding Spots
 dataType = 1; %0 if currents
-nameCurrent = "Whole cell_exc"; % either Whole cell_exc or Whole cell_inh
+currAnalysis = 'excitation'; %exc or inh for expanding spots protocol
+% currAnalysis = 'inhibition';
+nameCurrent = "Whole cell_inh"; % either Whole cell_exc or Whole cell_inh
 splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"];
 runSplitter = ["currentSpotSize"]; %might just set this manually because not gonna change? number could change if the protocol run was cut short
 %this is why Greg did this the way he did .... maybe.  gonna have to figure
 %this out by TIME??? which seems rough
+
+desiredSTD = 5;
 
 splitCell = cell(2,length(splitFactors));
 
@@ -440,14 +531,25 @@ end
 
 count = 0;
 clear epochStorage 
-
+currType = 'no';
 if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
-   if strcmp(displayName,'Expanding Spots') && strcmp(egLabel,'Control')
+    if strcmp(displayName,'Expanding Spots')
+       oAnalysis = epochs(i).meta.onlineAnalysis;
+       leakC = epochs(i).epoch(1); 
+       if 50>leakC && leakC>-50
+           currType = 'yes'
+           leakC
+       else
+           currType = 'no'
+       end
+   end
+   
+   if strcmp(displayName,'Expanding Spots') && strcmp(currType,'yes')
         
         count = count + 1;
         for s = 1:length(splitFactors)
@@ -471,9 +573,19 @@ else
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
-       if strcmp(displayName,'Expanding Spots') && strcmp(egLabel,'Whole cell_exc')
+   if strcmp(displayName,'Expanding Spots')
+%        oAnalysis = epochs(i).meta.onlineAnalysis
+       leakC = epochs(i).epoch(1); 
+       if leakC<-50
+           currType = 'excitation'
+       elseif leakC > 50
+           currType = 'inhibition'
+       end
+   end
+       if strcmp(displayName,'Expanding Spots') && strcmp(currType,currAnalysis)
 
             count = count + 1;
+            
             for s = 1:length(splitFactors)
             splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
             end
@@ -496,7 +608,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 4;
+
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -559,11 +671,16 @@ params.dataType = dataType;
 simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 
 %% Drifting Grating
-
+dataType =1;
+currWanted = 'excitation';
+% currWanted = 'inhibition';
 splitFactors = ["apertureRadius","barWidth","temporalFrequency","orientation"];
 runSplitter = ["orientations"]; %might just set this manually because not gonna change? number could change if the protocol run was cut short
 %this is why Greg did this the way he did .... maybe.  gonna have to figure
 %this out by TIME??? which seems rough
+
+desiredSTD = 5;
+
 
 splitCell = cell(2,length(splitFactors));
 
@@ -578,12 +695,17 @@ clear apertureRadius
 clear temporalFrequency
 clear angle0
 
+if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
-   if strcmp(displayName,'Grating DSOS') && strcmp(egLabel,'Control')
+   if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis;
+   end
+   
+   if strcmp(displayName,'Grating DSOS') && strcmp(oAnalysis,'extracellular')    
         
         count = count + 1;
         for s = 1:length(splitFactors)
@@ -601,13 +723,57 @@ for i = 1:length(epochs)
    end
 end
 
+else
+    for i = 1:length(epochs)
+  
+   displayName = epochs(i).meta.displayName;
+   egLabel = epochs(i).meta.epochGroupLabel;
+   recording = epochs(i).meta.recordingTechnique;
+   if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis
+       leakC = epochs(i).epoch(1); 
+       if leakC<-50
+           currType = 'excitation'
+       elseif leakC > 50
+           currType = 'inhibition'
+       end
+   end
+       if strcmp(displayName,'Grating DSOS') && strcmp(oAnalysis,'analog') && strcmp(currType,currWanted)
+           
+            barSizeFind = contains(splitFactors,'barSize');
+          for s = 1:length(splitFactors)
+            if barSizeFind(s)
+                count2=count2+1
+               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
+               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
+               barSizeCombined = str2num(strTransferTicket);
+               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
+            else
+            splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+           
+            end
+          end
+            count = count + 1;
+    %         width(count) = epochs(i).meta.barWidth;
+            epochStorage(count,:) = epochs(i).epoch;
+    %         apertureRadius(count) = epochs(i).meta.apertureRadius;
+    %         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
+%             intensity(count) = epochs(i).meta.intensity;
+            preTime = epochs(i).meta.preTime;
+            stimTime = epochs(i).meta.stimTime;
+            tailTime = epochs(i).meta.tailTime;
+    %         angleO(count) = epochs(i).meta.orientation;
+       end
+    end
+end
+
 stimOrig = stimTime;
 sampleRate = 10000;
 % preTime = epochs(1).meta.preTime;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 5;
+
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -639,16 +805,24 @@ while ~isempty(combos)
 end
 
 
+if dataType ==1
 for k = 1:size(epochStorage,1)
     
 [spikes, finalSTD, finalDiscard] = convertSpikesAdree(epochStorage(k,:), stimTime, ...
               desiredSTD);
           if isempty(spikes)
-              disp('deleted epoch')
+              disp('deleted epoch') 
           else
         spikeMatrix(k,:) = spikes;
         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
+end
+
+else   
+    for k = 1:size(epochStorage,1)
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+    end
 end
 timings = [preTime stimOrig tailTime];
 params = struct();
@@ -659,10 +833,14 @@ params.stimName = 'Grating';
 orientedStim(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% Oriented Bars
 dataType = 1; %0 if currents
+currAnalysis = 'excitation';
+% currAnalysis = 'inhibition';
 splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
+
+desiredSTD = 4;
 
 splitCell = cell(2,length(splitFactors));
 
@@ -680,7 +858,11 @@ for i = 1:length(epochs)
    displayName = epochs(i).meta.displayName;
    recordingTechnique = epochs(i).meta.recordingTechnique;
     egLabel = epochs(i).meta.epochGroupLabel;
-   if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,'Control')
+    if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis;
+   end
+   
+   if strcmp(displayName,'Oriented Bars') && strcmp(oAnalysis,'extracellular')    
         
         for s = 1:length(splitFactors)
             barSizeFind = contains(splitFactors,'barSize');
@@ -712,7 +894,16 @@ else
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
-       if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,'Whole cell_exc')
+   if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis
+       leakC = epochs(i).epoch(1); 
+       if leakC<-50
+           currType = 'excitation'
+       elseif leakC > 50
+           currType = 'inhibition'
+       end
+   end
+       if strcmp(displayName,'Oriented Bars') && strcmp(oAnalysis,'analog') && strcmp(currType,currAnalysis)
             barSizeFind = contains(splitFactors,'barSize');
           for s = 1:length(splitFactors)
             if barSizeFind(s)
@@ -746,7 +937,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 4.5;
+
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -802,13 +993,16 @@ timings = [preTime stimOrig tailTime];
 orientedStim(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% MOVING BAR
 
-
+dataType = 1; %0 if currents
 splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
-
+leakC = 0;
 splitCell = cell(2,length(splitFactors));
+
+desiredSTD = 5;
+
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -816,14 +1010,16 @@ end
 
 count = 0;
 clear epochStorage;
-
+if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
    recordingTechnique = epochs(i).meta.recordingTechnique;
+  if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis;
+   end
    
-   if strcmp(displayName,'Moving Bar') && ~strcmp(recordingTechnique,'whole-cell') && ~strcmp(recordingTechnique,'EXCITATION') && ~strcmp(recordingTechnique,'INHIBITION') 
-        
+   if strcmp(displayName,'Moving Bar') && strcmp(oAnalysis,'extracellular')      
         for s = 1:length(splitFactors)
             barSizeFind = contains(splitFactors,'barSize');
             if barSizeFind(s)
@@ -846,13 +1042,55 @@ for i = 1:length(epochs)
    end
 end
 
+else
+    for i = 1:length(epochs)
+  
+   displayName = epochs(i).meta.displayName;
+   egLabel = epochs(i).meta.epochGroupLabel;
+   recording = epochs(i).meta.recordingTechnique;
+   if isfield(epochs(i).meta,'onlineAnalysis')
+       oAnalysis = epochs(i).meta.onlineAnalysis
+       leakC = epochs(i).epoch(1); 
+   end
+       if strcmp(displayName,'Moving Bar') && strcmp(oAnalysis,'analog') && leakC < -50
+           
+            barSizeFind = contains(splitFactors,'barSize');
+          for s = 1:length(splitFactors)
+            if barSizeFind(s)
+                count2=count2+1
+               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
+               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
+               barSizeCombined = str2num(strTransferTicket);
+               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
+            else
+            splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+           
+            end
+          end
+            count = count + 1;
+    %         width(count) = epochs(i).meta.barWidth;
+            epochStorage(count,:) = epochs(i).epoch;
+    %         apertureRadius(count) = epochs(i).meta.apertureRadius;
+    %         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
+            intensity(count) = epochs(i).meta.intensity;
+            preTime = epochs(i).meta.preTime;
+            stimTime = epochs(i).meta.stimTime;
+            tailTime = epochs(i).meta.tailTime;
+    %         angleO(count) = epochs(i).meta.orientation;
+       end
+    end
+end
+
+
+
+
 stimOrig = stimTime;
 sampleRate = 10000;
 % preTime = epochs(1).meta.preTime;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 4;
+
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -881,7 +1119,7 @@ while ~isempty(combos)
     combos(1,:) = [];
 end
 
-
+if dataType == 1
 for k = 1:size(epochStorage,1)
     
 [spikes, finalSTD, finalDiscard] = convertSpikesAdree(epochStorage(k,:), stimTime, ...
@@ -892,6 +1130,13 @@ for k = 1:size(epochStorage,1)
         spikeMatrix(k,:) = spikes;
         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
+end
+
+else   
+    for k = 1:size(epochStorage,1)
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+    end
 end
 
 params = struct();
