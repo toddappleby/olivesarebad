@@ -10,16 +10,16 @@ MCSOFFParasol = struct();
 MCSONParasol = struct();
 MCSONSmooth = struct();
 MCSOFFSmooth = struct();
-%% I'M DUMB
+%% .....
 OFFParasolC = 0;
 ONParasolC = 0;
 ONSmoothC = 0;
 OFFSmoothC = 0;
 
 %% load FT first, give different name --- #1
-cd('E:\Data Analysis_2020\2019_0620\')
+cd('E:\Data Analysis_2020\2020_0420\')
 expDate = dir;
-load('20190620Bc3.mat')
+load('20200420Bc2.mat')
 frameTimings = epochs;
 %% what protocols contained in data?
 
@@ -27,6 +27,7 @@ uniqueProtocols = [];
 
 for z = 1:size(epochs,2)
    list(z) = string(epochs(z).meta.displayName);
+   
 %    allEpochData(z,1:length(epochs(z).epoch)) = epochs(z).epoch;
 end
 %find 0s, make index, create new string
@@ -195,11 +196,12 @@ end
 %% MTF spots and annuli
 
 splitFactors = ["stimulusClass","temporalFrequency","temporalClass","radius"];
+% splitFactors = ["temporalFrequency","searchAxis","barSize","position"];
 runSplitter = ["radius"]; 
 
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 6;
+desiredSTD = 4;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -221,9 +223,11 @@ for i = 1:length(epochs)
       oAnalysis = epochs(i).meta.onlineAnalysis;
   end
    
+%   if strcmp(displayName,'Bar Centering') && strcmp(oAnalysis,'extracellular') 
    if strcmp(displayName,'S MT Fspot') && strcmp(oAnalysis,'extracellular') 
     temporalClass = epochs(i).meta.temporalClass;
     if strcmp(temporalClass,'sinewave')
+%        if strcmp(temporalClass,'squarewave')
         count = count + 1;
         for s = 1:length(splitFactors)
             if ischar(getfield(epochs(i).meta,splitFactors(s)))
@@ -424,7 +428,7 @@ centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,s
 
 %this isn't as flexible because character vectors are hellworld
 
-splitFactors = ["led"];
+splitFactors = ["chromaticClass"];
 %NOTE: ISOMERIZATIONS PLEASE 
 
 splitCell = cell(2,length(splitFactors));
@@ -440,7 +444,7 @@ for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
    recordingTechnique = epochs(i).meta.recordingTechnique;
-   if strcmp(displayName,'Led Pulse') && ~strcmp(recordingTechnique,'whole-cell') && ~strcmp(recordingTechnique,'EXCITATION') && ~strcmp(recordingTechnique,'INHIBITION')
+   if strcmp(displayName,'Chromatic Spot') && ~strcmp(recordingTechnique,'whole-cell') && ~strcmp(recordingTechnique,'EXCITATION') && ~strcmp(recordingTechnique,'INHIBITION')
         
         for s = 1:length(splitFactors)
             
@@ -512,16 +516,18 @@ params.stimName = 'LED';
 timings = [preTime stimOrig tailTime];
 LED(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% Expanding Spots
-dataType = 1; %0 if currents
+dataType = 0; %0 if currents
 currAnalysis = 'excitation'; %exc or inh for expanding spots protocol
 % currAnalysis = 'inhibition';
+manualParse = false; firstTime=true; %only do manual threshold if required (turn simpleParse to false to use)
+
 nameCurrent = "Whole cell_inh"; % either Whole cell_exc or Whole cell_inh
 splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"];
-runSplitter = ["currentSpotSize"]; %might just set this manually because not gonna change? number could change if the protocol run was cut short
-%this is why Greg did this the way he did .... maybe.  gonna have to figure
-%this out by TIME??? which seems rough
+runSplitter = ["currentSpotSize"];
 
-desiredSTD = 5;
+leakThreshold = 200;
+
+desiredSTD = 3.5;
 
 splitCell = cell(2,length(splitFactors));
 
@@ -532,6 +538,7 @@ end
 count = 0;
 clear epochStorage 
 currType = 'no';
+
 if dataType == 1
 for i = 1:length(epochs)
   
@@ -539,17 +546,31 @@ for i = 1:length(epochs)
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
     if strcmp(displayName,'Expanding Spots')
-       oAnalysis = epochs(i).meta.onlineAnalysis;
-       leakC = epochs(i).epoch(1); 
-       if 50>leakC && leakC>-50
-           currType = 'yes'
-           leakC
-       else
-           currType = 'no'
-       end
-   end
+        
+           oAnalysis = epochs(i).meta.onlineAnalysis;
+
+          
+           leakC = epochs(i).epoch(1);
+           
+            %below allows manual entry of proper leak
+       if manualParse   
+            plot(epochs(i).epoch)
+               if firstTime
+                  respondedToEpoch = false; 
+               else
+                  respondedToEpoch = true;
+               end
+            while ~respondedToEpoch
+                2+2
+               firstTime = false;
+               leakThreshold = input('enter leak: ','s');
+               leakThreshold = str2num(leakThreshold);
+               respondedToEpoch = true; 
+            end
+       end 
+    end
    
-   if strcmp(displayName,'Expanding Spots') && strcmp(currType,'yes')
+   if strcmp(displayName,'Expanding Spots') && leakThreshold>leakC && leakC>-leakThreshold 
         
         count = count + 1;
         for s = 1:length(splitFactors)
@@ -574,11 +595,27 @@ else
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
    if strcmp(displayName,'Expanding Spots')
-%        oAnalysis = epochs(i).meta.onlineAnalysis
+
        leakC = epochs(i).epoch(1); 
-       if leakC<-50
+      if manualParse
+            %below allows manual entry of appropriate leak
+           plot(epochs(i).epoch)
+               if firstTime
+                  respondedToEpoch = false; 
+               else
+                  respondedToEpoch = true;
+               end
+            while ~respondedToEpoch
+               firstTime = false;
+               leakThreshold = input('enter leak: ','s');
+               leakThreshold = str2num(leakThreshold);
+                respondedToEpoch = true; 
+            end
+      end
+       if leakC<-leakThreshold 
            currType = 'excitation'
-       elseif leakC > 50
+           leakC
+       elseif leakC > leakThreshold 
            currType = 'inhibition'
        end
    end
@@ -679,7 +716,7 @@ runSplitter = ["orientations"]; %might just set this manually because not gonna 
 %this is why Greg did this the way he did .... maybe.  gonna have to figure
 %this out by TIME??? which seems rough
 
-desiredSTD = 5;
+desiredSTD = 4.5;
 
 
 splitCell = cell(2,length(splitFactors));
@@ -831,6 +868,7 @@ params.stimName = 'Grating';
 % saveGraph = 0;
 % stimName = 'Grating';
 orientedStim(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+
 %% Oriented Bars
 dataType = 1; %0 if currents
 currAnalysis = 'excitation';
@@ -860,33 +898,34 @@ for i = 1:length(epochs)
     egLabel = epochs(i).meta.epochGroupLabel;
     if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis;
-   end
+    end
    
-   if strcmp(displayName,'Oriented Bars') && strcmp(oAnalysis,'extracellular')    
-        
-        for s = 1:length(splitFactors)
-            barSizeFind = contains(splitFactors,'barSize');
-            if barSizeFind(s)
-                count2=count2+1;
-               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
-               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
-               barSizeCombined = str2num(strTransferTicket);
-               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
-            else
-               splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
-            end
-        
-        end
-       
-        count = count + 1;
-        intensity(count) = epochs(i).meta.intensity;
-        epochStorage(count,:) = epochs(i).epoch;
-        preTime = epochs(i).meta.preTime;
-        stimTime = epochs(i).meta.stimTime;
-        tailTime = epochs(i).meta.tailTime;
-      
-   end
+              if strcmp(displayName,'Oriented Bars') && strcmp(oAnalysis,'extracellular')  
+                for s=1:length(splitCell)  
+                  if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
+                      stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
+                  elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'char')
+                      stringedEntry = convertCharsToStrings(getfield(epochs(i).meta,splitFactors(s)));
+                  end
+               
+                    splitCell{2,s}=[splitCell{2,s} stringedEntry];
+                end
+            count = count + 1;
+            intensity(count) = epochs(i).meta.intensity;
+            epochStorage(count,:) = epochs(i).epoch;
+            preTime = epochs(i).meta.preTime;
+            stimTime = epochs(i).meta.stimTime;
+            tailTime = epochs(i).meta.tailTime;
+              end
+
+              
 end
+       
+
+        
+      
+ 
+
 
 else
     for i = 1:length(epochs)
@@ -904,29 +943,21 @@ else
        end
    end
        if strcmp(displayName,'Oriented Bars') && strcmp(oAnalysis,'analog') && strcmp(currType,currAnalysis)
-            barSizeFind = contains(splitFactors,'barSize');
-          for s = 1:length(splitFactors)
-            if barSizeFind(s)
-                count2=count2+1
-               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
-               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
-               barSizeCombined = str2num(strTransferTicket);
-               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
-            else
-            splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
-           
-            end
-          end
+                for s=1:length(splitCell)  
+                  if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
+                      stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
+                  elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'char')
+                      stringedEntry = convertCharsToStrings(getfield(epochs(i).meta,splitFactors(s)));
+                  end
+               
+                    splitCell{2,s}=[splitCell{2,s} stringedEntry];
+                end
             count = count + 1;
-    %         width(count) = epochs(i).meta.barWidth;
-            epochStorage(count,:) = epochs(i).epoch;
-    %         apertureRadius(count) = epochs(i).meta.apertureRadius;
-    %         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
             intensity(count) = epochs(i).meta.intensity;
+            epochStorage(count,:) = epochs(i).epoch;
             preTime = epochs(i).meta.preTime;
             stimTime = epochs(i).meta.stimTime;
             tailTime = epochs(i).meta.tailTime;
-    %         angleO(count) = epochs(i).meta.orientation;
        end
     end
 end
@@ -941,11 +972,26 @@ stimTime = stimTime/1000;
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
-allSets=zeros(size(splitCell{2,1},2),size(splitCell,2)-1);
+%string thing
+% for m = 1:size(splitCell,2)-1
+%     if strcmp(class(splitCell{2,m}),'char')
+%         uniqueStrings = unique(splitCell{2,m});
+%         replacer = zeros(size(splitCell{2,m}));
+%         
+%         for n = 1:length(uniqueStrings)
+%            strInd = find(splitCell{2,m}==uniqueStrings(n));
+%            replacer(strInd) = n;
+%         end
+% %         holdList(:,m) = splitCell{2,m};
+%         splitCell{2,m}=replacer;
+%     end
+% end
+
+allSets=strings(size(splitCell{2,1},2),size(splitCell,2)-1);
 
 for o = 1:size(splitCell,2)-1
     for p = 1:size(splitCell{2,1},2)
-        allSets(p,o) = splitCell{2,o}(1,p);       
+          allSets(p,o) = splitCell{2,o}(1,p);       
     end
 end
 
@@ -958,7 +1004,6 @@ counter = 0;
 while ~isempty(combos)
     counter = counter +1;
     istherenobetterway = combos(1,:) ==allSets;
-    
     
     
     indexHolder{1,counter} = combos(1,:);
@@ -1001,7 +1046,7 @@ splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 leakC = 0;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 5;
+desiredSTD = 3.5;
 
 
 for g = 1:length(splitCell)
@@ -1158,7 +1203,7 @@ stimOff = (timings(1)+timings(2)+timings(3))*10;
 figure(11)
 subplot(2,1,1)
 
-xvals = linspace(0,stimOff/10,7500);
+xvals = linspace(0,stimOff/10,15000);
 
 plot(xvals,mean(psthMatrix(indexHolder{2,1},:)))
 xline(stimStart/10,'LineStyle','--','Color','r','LineWidth',2)
@@ -1932,6 +1977,21 @@ end
 
 function centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,sampleRate)
 
+% sampleRate = 10000;
+% 
+% stimStart = (timings(1)*1e-3)*sampleRate+1;
+% stimEnd = (timings(1) + timings(2))*1e-3*sampleRate;
+% stimOff = (timings(1)+timings(2)+timings(3))*10;
+% 
+%             data = mean(XspikeMatrix(sortedIndex(finalInd),:),1);
+%                     binnedData = BinSpikeRate(data(stimStart:stimEnd), 100, sampleRate);
+%                 [F, phase] = frequencyModulation(binnedData, ...
+%                 100, indexHolder{1,a}(1,params.tfreq(1)), 'avg', 1:2, []);
+%                 avgF1(u)= F(1);
+%                 avgF2(u)= F(2);    
+                
+
+
 sender = struct();
 uniqueP = unique(positionX);
 uniqueP = sort(uniqueP);
@@ -2095,6 +2155,8 @@ for a = 1:size(indexHolder,2)
 % onResp
 
 
+uniqueOrientations = sort(str2double(uniqueOrientations));
+
 
 figure(a)
 subplot(1,2,1);
@@ -2105,7 +2167,8 @@ hold on
 subplot(1,2,2);
 polar(uniqueOrientations * 2 * pi/360, offResp);
 title('OFF')
-xlabel(num2str(indexHolder{1,a}'));
+% xlabel(num2str(indexHolder{1,a}'));
+xlabel(indexHolder{1,a}');
 
 end
 elseif strcmp(params.stimName,'moving bar')

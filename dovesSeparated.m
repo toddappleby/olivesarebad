@@ -1,7 +1,7 @@
 % load data -- #2
- cd('E:\Data Analysis_2020\2020_0504\')
- fileName = '20200504Bc2.mat';
- saveFile = '20200504Bc2_ONOFFUnknown_Doves.mat';
+ cd('E:\Data Analysis_2020\2019_0221\')
+ fileName = '20190221Bc7.mat';
+ saveFile = '20190221Bc7_ONOFFunknown_Doves.mat';
  load(fileName)
 
 uniqueProtocols = [];
@@ -49,7 +49,20 @@ for i = 1:length(epochs)
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
-   if strcmp(displayName,'Doves Movie') && strcmp(egLabel,'Control')
+   
+    if strcmp(displayName,'Doves Movie')
+%        oAnalysis = epochs(i).meta.onlineAnalysis;
+       leakC = epochs(i).epoch(1); 
+       if 50>leakC && leakC>-50
+           currType = 'yes'
+           leakC
+       else
+           currType = 'no'
+           leakC
+       end
+    end
+   currType='yes';
+   if strcmp(displayName,'Doves Movie') && strcmp(currType,'yes')
         
         count = count + 1;
         for s = 1:length(splitFactors)
@@ -151,6 +164,7 @@ if dataType == 1
 
 else
 
+  
     
 
     for k = 1:size(epochStorage,1)
@@ -244,13 +258,16 @@ spotIntensityPlace = find(strcmp(analysisSplitters,"spotIntensity")==1);
 for g = 1:length(uniqueIndex)
     picIndex = find(splitCell{2,size(splitCell,2)}==uniqueIndex(g))
         
-    stimPlacer = ismember(indexHolder{2,2},picIndex); % not sure how to automate this part, hopefully remains the same each time (to get full field image only);
+    stimPlacer = ismember(indexHolder{2,1},picIndex); % not sure how to automate this part, hopefully remains the same each time (to get full field image only);
     stimIndex{1,g} = uniqueIndex(g);
     stimIndex{2,g} = FEMdata(uniqueIndex(g)).ImageName;
-    stimIndex{3,g} = mean(psthMatrix(indexHolder{2,2}(stimPlacer),:),1);
-    
+    stimIndex{3,g} = mean(psthMatrix(indexHolder{2,1}(stimPlacer),:),1);
+    forIgor(g,:) = mean(psthMatrix(indexHolder{2,1}(stimPlacer),:),1);
+    size(forIgor)
 end
 
 save(['E:\Data Analysis_2020\DovesData',params.saveFile],'stimIndex')
+save(['E:\Data Analysis_2020\DovesData','_simpleMat',params.saveFile,],'forIgor')
+
 
 end

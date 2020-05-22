@@ -30,13 +30,13 @@ expNum= 11;
 cellName = 'Bc8';
 
 % load FT first, give different name --- #1
-cd('E:\Data Analysis_2020\2019_1107\')
+cd('E:\Data Analysis_2020\2020_0504\')
 
-load('20191107Bc6_FT.mat')
+load('20200504Bc2_FT.mat')
 frameTimings = epochs;
 expDate = dir;
 % now load data -- #2
-load('20191107Bc6.mat')
+load('20200504Bc2.mat')
 
 uniqueProtocols = [];
 
@@ -89,6 +89,7 @@ epochNumFrames = epochNumFrames(DI);
 %%  spike detection and epoch organization -- #4
 
  count = 0;
+ desiredSTD = 7; 
 clear binnedStorage
 
 clear epochStartTimeD
@@ -157,7 +158,7 @@ spikeMatrix = zeros(size(binnedStorage,1),size(binnedStorage,2)/10);
 spikeMatrixUnbinned = zeros(size(binnedStorage,1),size(binnedStorage,2));
 psthMatrix = zeros(size(binnedStorage,1),size(binnedStorage,2)/10);
 
-desiredSTD = 9; %arbitrary, works for most extracellular data
+
 
 % binRate = 1000;
 % response(o,:) = binSpikeCount(epoch(o,:)/sampleRate, binRate, sampleRate);
@@ -233,7 +234,7 @@ gaussianIndex = contains(noiseClass,'gaussian');
 % FRAME DWELL (you'll get logical 1s in binaryIndex where it's actually
 % gaussian noise)
 
-splitter2 = 180;
+splitter2 = 270;
 
 
 
@@ -248,7 +249,7 @@ gaussianIndex(10:end) = false;
 
  %% Get stim frames -- #5 (standard, using Mike's frame time functions)
 count = 0;
-noiseFlag =0; %1 for gaussian
+noiseFlag =1; %1 for gaussian
 clear frameValues;
 clear frameValuesAll;
 clear response1;
@@ -651,6 +652,7 @@ save('MotionandNoise.mat','-append','MNOFFSmooth')
 %% Motion center surround
  
 count = 0;
+desiredSTD = 16;
 clear epochStorage 
 clear bgClass
 clear centerClass
@@ -664,6 +666,7 @@ for i = 1:length(epochs)
    if strcmp(displayName,'Motion Center Surround') && ~strcmp(recordingTechnique,'whole-cell') && strcmp(egLabel,'Control')
         width = epochs(i).meta.surroundBarWidth;
           surroundOrientation = epochs(i).meta.surroundBarOrientation;
+          
         if width <= 100 && surroundOrientation == 90
         protocolExample = i;
         count = count + 1;
@@ -697,7 +700,7 @@ for i = 1:length(epochs)
 end
 
 saveGraph = 0;
-[meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph);
+[meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph,desiredSTD);
 
 
 
@@ -822,7 +825,7 @@ axis([0 max(xaxis) 0 max(yaxis)+2])
 
 end
 
-function [meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph)
+function [meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph,STD1)
 
 sampleRate = 10000;
 binRate = 1000;
@@ -832,7 +835,7 @@ stimOrig = stimTime;
 motionTime = epochs(protocolExample).meta.motionTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 9;
+desiredSTD = STD1;
 % spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 % psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
@@ -1250,6 +1253,11 @@ plot(mean(psthMatrix(posContrast(centerRand),:)),'Color','b','LineWidth',1)
 plot(mean(psthMatrix(posContrast(center180),:)),'Color','k','LineWidth',1)
 legend('seq','rand','180','location','northwest')
 title('all positive center, sequential surround')
+posContrastSeq(:,1) = mean(psthMatrix(posContrast(centerSeq),:));
+posContrastSeq(:,2) = mean(psthMatrix(posContrast(centerRand),:));
+posContrastSeq(:,3) = mean(psthMatrix(posContrast(center180),:));
+save(['E:\Data Analysis_2020\weeklymeeting_0522\posContrastSeq.mat'],'posContrastSeq');
+
 
 subplot(2,3,4)
 plot(mean(psthMatrix(posContrast(centerRSeq),:)),'Color','r','LineWidth',1)
@@ -1258,6 +1266,10 @@ plot(mean(psthMatrix(posContrast(centerRRand),:)),'Color','b','LineWidth',1)
 plot(mean(psthMatrix(posContrast(centerR180),:)),'Color','k','LineWidth',1)
 legend('seq','rand','180','location','northwest')
 title('all positive center, random surround')
+posContrastRand(:,1) = mean(psthMatrix(posContrast(centerRSeq),:));
+posContrastRand(:,2) = mean(psthMatrix(posContrast(centerRRand),:));
+posContrastRand(:,3) = mean(psthMatrix(posContrast(centerR180),:));
+save(['E:\Data Analysis_2020\weeklymeeting_0522\posContrastRand.mat'],'posContrastRand');
 
 
 subplot(2,3,5)
@@ -1267,6 +1279,10 @@ plot(mean(psthMatrix(negContrast(centerRandNeg),:)),'Color','b')
 plot(mean(psthMatrix(negContrast(center180Neg),:)),'Color','k')
 legend('seq','rand','180','location','northwest')
 title('all negative center, sequential surround')
+negContrastSeq(:,1) = mean(psthMatrix(negContrast(centerSeqNeg),:));
+negContrastSeq(:,2) = mean(psthMatrix(negContrast(centerRandNeg),:));
+negContrastSeq(:,3) = mean(psthMatrix(negContrast(center180Neg),:));
+save(['E:\Data Analysis_2020\weeklymeeting_0522\negContrastSeq.mat'],'negContrastSeq');
 
 subplot(2,3,6)
 plot(mean(psthMatrix(negContrast(centerRSeqNeg),:)),'Color','r')
@@ -1275,6 +1291,10 @@ plot(mean(psthMatrix(negContrast(centerRRandNeg),:)),'Color','b')
 plot(mean(psthMatrix(negContrast(centerR180Neg),:)),'Color','k')
 legend('seq','rand','180','location','northwest')
 title('all negative center, random surround')
+negContrastRand(:,1) = mean(psthMatrix(negContrast(centerRSeqNeg),:));
+negContrastRand(:,2) = mean(psthMatrix(negContrast(centerRRandNeg),:));
+negContrastRand(:,3) = mean(psthMatrix(negContrast(centerR180Neg),:));
+save(['E:\Data Analysis_2020\weeklymeeting_0522\negContrastRand.mat'],'negContrastRand');
 
 figure(50)
 subplot(1,2,1)
