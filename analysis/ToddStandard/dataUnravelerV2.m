@@ -30,17 +30,30 @@ expNum= 11;
 cellName = 'Bc8';
 
 % load FT first, give different name --- #1
-% cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_0504')
-cd('E:\Data Analysis_2020\2020_0519')
+% cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_0630')
+% %smooth
+% cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2021_0128') %parasol
+% cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_0713')%BT?
+cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_1217')
+% cd('E:\Data Analysis_2020\2020_0519')
 
 
-load('20200519Bc4_FT.mat')
+% load('20200630Ac1_FT.mat')
+load('20201217Ac2_FT.mat')
+% load('20190927Bc1_FT.mat')
+% load('20200923Bc2_FT.mat')
+% load('20210128Bc2_FT.mat')
+% load('20200713Bc3_FT.mat')
 frameTimings = epochs;
 expDate = dir;
 % now load data -- #2+
 
-load('20201118Bc3.mat')
-
+% load('20200630Ac1.mat')
+load('20201217Ac2.mat')
+% load('20190927Bc1.mat')
+% load('20200923Bc2.mat')
+% load('20210128Bc2.mat')
+% load('20200713Bc3.mat')
 uniqueProtocols = [];
 
 for z = 1:size(epochs,2)
@@ -92,9 +105,9 @@ monitorStorage = monitorStorage(DI,:);
 % epochNumFrames = epochNumFrames(DI);
 %%  spike detection and epoch organization -- #4
 dataType=1;
-excorinh = 'Whole cell_inh';
+excorinh = 'Whole cell_exc';
  count = 0;
- desiredSTD = 10; 
+ desiredSTD =7 ; 
 clear binnedStorage
 clear epochStorage
 clear epochStartTimeD
@@ -189,7 +202,7 @@ for k = 1:size(binnedStorage,1)
               
         spikeMatrixUnbinned(k,:) = spikes;
 %         psthMatrix2(k,:) = psth(spikeMatrix(k,:)*10000,6+2/3,10000,1);
-        spikes = binSpikeCount(spikes/sampleRate, binRate, sampleRate);
+        spikes = binSpikeCount(spikes, binRate, sampleRate);
         spikes = spikes';
         spikeMatrix(k,:) = spikes;
         psthMatrix(k,:) = psth(spikeMatrix(k,:)*binRate,6+2/3,binRate,1);
@@ -306,7 +319,7 @@ plot(mean(lfRespSeq),'Color','r')
 legend('static','random','sequential')
  %% Get stim frames -- #5 (standard, using Mike's frame time functions)
 count = 0;
-noiseFlag =0; %1 for gaussian
+noiseFlag = 1; %1 for gaussian
 clear frameValues;
 clear frameValuesAll;
 clear response1;
@@ -455,43 +468,17 @@ ylabel('weight')
 set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inches', 'PaperSize', [7.25, 9.125],'Color','w')
 % export_fig 'noiseNL.pdf'
 
- if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    OFFParasolC = OFFParasolC+1;
-    
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).Name = cellName;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).Date = epochs(1).meta.epochTime;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.X= ((1:plotLngth)/binRate);
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.Seq = linearFilterSeq;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.Rand = linearFilterRandom;
-     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).LF.Static = linearFilterStatic;
- elseif saveFlag ==1 && strcmp(cellType,'ON Parasol')
-    ONParasolC = ONParasolC+1;
-    
-    MNONParasol.Exp(expNum).Cell(ONParasolC).Name = cellName;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).Date = epochs(1).meta.epochTime;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.X= (1:plotLngth)/binRate;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.Seq = linearFilterSeq;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.Rand = linearFilterRandom;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).LF.Static = linearFilterStatic;
- elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-    ONSmoothC = ONSmoothC+1;
+filterX = (1:plotLngth)/binRate;
+filterX=filterX';
+lFilter=[];
+lFilter(1,:)=linearFilterSeq(1:plotLngth);
+lFilter(2,:)=linearFilterRandom(1:plotLngth);
+lFilter(3,:)=linearFilterStatic(1:plotLngth);
+
+lFilter=lFilter';
+save('PoffOuttFilter','lFilter','filterX')
+
      
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).Name = cellName;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).Date = epochs(1).meta.epochTime;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.X= (1:plotLngth)/binRate;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.Seq = linearFilterSeq;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.Rand = linearFilterRandom;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).LF.Static = linearFilterStatic;
- elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    OFFSmoothC = ONSmoothC+1;
-     
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).Name = cellName;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).Date = epochs(1).meta.epochTime;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.X= (1:plotLngth)/binRate;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.Seq = linearFilterSeq;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.Rand = linearFilterRandom;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).LF.Static = linearFilterStatic;
- end
  
  % start NL 
 stimExtent = prePts + (1:stimPts);
@@ -563,20 +550,35 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
  figure(8);
  clf
- plot(huhx/max(huhx),huhy*10000,'.','Color','r')
+ plot(huhx/max(huhx),huhy,'.','Color','r')
+
+ 
 %  plot(nonLinXAx3,huhy*10000,'.','Color','r')
  hold on
- plot(nonLinXAx3/max(nonLinXAx3),outputNonlinearity(g,nonLinXAx3)*10000,'Color','r','LineWidth',1.5)
-axis([-1 1 0 max(huhy*10000)+2])
+ plot(nonLinXAx3/max(nonLinXAx3),outputNonlinearity(g,nonLinXAx3),'Color','r','LineWidth',1.5)
+axis([-1 1 0 max(huhy)+2])
+
+  nonLinFit = outputNonlinearity(g,nonLinXAx3);
+  
+
 
 %  predStore(:,stimExtent(501:end))
-% [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(1:9770)),respStore(:,stimExtent(1:9770)),nonlinearityBins);
 [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(:)),respStore(:,stimExtent(:)),nonlinearityBins);
  nlParams = fitNonlinearityParams(xfBin, yfBin);
+
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX)*10000,'Color','r','LineWidth',2)
+ plot(nlX,outputNonlinearity(nlParams,nlX),'Color','r','LineWidth',2)
  hold on
+ nlParamsSeq = nlParams;
+ 
+ outY(1,:)=outputNonlinearity(nlParams,nlX);
+ outX(1,:)=nlX;
+ 
+ binnedX(:,1) = xfBin;
+ binnedY(:,1) = yfBin; 
+ 
+ XforModel(:,1) = nlX;
  
  if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.X = nlX;
@@ -652,11 +654,19 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
 
  figure(8)
- plot(huhx/max(huhx),huhy*10000,'.','Color','b') %huhx*10
+ plot(huhx/max(huhx),huhy,'.','Color','b') %huhx*10
+ 
+
+ 
+
  
 %  plot(nonLinXAx3,huhy*10000,'.','Color','b')
  hold on
- plot(nonLinXAx3/max(nonLinXAx3),outputNonlinearity(g,nonLinXAx3)*10000,'Color','b','LineWidth',1.5)
+ plot(nonLinXAx3/max(nonLinXAx3),outputNonlinearity(g,nonLinXAx3),'Color','b','LineWidth',1.5)
+ 
+   nonLinFit = outputNonlinearity(g,nonLinXAx3);
+  
+
  
 %  axis([-1 1 0 max(huhy*10000)+2])
  [xfBin,yfBin] = binNonlinearity(pred2Store(:,stimExtent(:)),respStore(:,stimExtent(:)),nonlinearityBins);
@@ -664,8 +674,16 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX)*10000,'Color','b','LineWidth',2)
+ plot(nlX,outputNonlinearity(nlParams,nlX),'Color','b','LineWidth',2)
+ outY(2,:)=outputNonlinearity(nlParams,nlX);
+ outX(2,:)=nlX;
  hold on
+ nlParamsRandom = nlParams;
+ 
+ binnedX(:,2) = xfBin;
+ binnedY(:,2) = yfBin;
+ 
+ XforModel(:,2) = nlX;
  
  if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Rand = outputNonlinearity(nlParams,nlX);
@@ -726,8 +744,6 @@ g = nlinfit(huhx,huhy,@outputNonlinearity,[max(yBin)*3 0.2 -1.5 min(yBin)],opts)
 nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
 
-
-
       figure(12)
       hold on
       plot(huhx,huhy,'Color','k')
@@ -735,12 +751,17 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
  
  figure(8)
- plot(huhx/max(huhx),huhy*10000,'.','Color','k')
+ plot(huhx/max(huhx),huhy,'.','Color','k')
+ 
+
 
  hold on
- plot(nonLinXAx3/max(nonLinXAx3),outputNonlinearity(g,nonLinXAx3)*10000,'Color','k','LineWidth',1.5)
-  axis([-1 1 0 max(huhy*10000)+2])
- 
+ plot(nonLinXAx3/max(nonLinXAx3),outputNonlinearity(g,nonLinXAx3),'Color','k','LineWidth',1.5)
+  axis([-1 1 0 max(huhy)+2])
+  
+  nonLinFit = outputNonlinearity(g,nonLinXAx3);
+  
+
  
 %   axis([0 400 0 4*10^-3])
  hold on
@@ -756,22 +777,117 @@ set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inch
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
- plot(nlX,outputNonlinearity(nlParams,nlX)*10000,'Color','k','LineWidth',2)
+ plot(nlX,outputNonlinearity(nlParams,nlX),'Color','k','LineWidth',2)
   legend('sequential','random','static','location','northwest')
   xlabel('input')
   ylabel('spikes/s')
   
+   outY(3,:)=outputNonlinearity(nlParams,nlX);
+ outX(3,:)=nlX;
+%  
+%  outY=outY';
+%  outX=outX';
+%  
+%  save('OffPout','outY','outX')
+  
+   binnedX(:,3) = xfBin;
+   binnedY(:,3) = yfBin; 
+ 
+   starterParams = [.2,-1.5];
+% nlX2 = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),100);
+ 
+mParams = fitMultiVarParams(binnedX(:,[1 2]),binnedY(:,[1 2]),1,starterParams);
+% outNL = multiVarNL(mParams,XforModel);
+outNL = multiHZNL(mParams,binnedX);
+
+% nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),size(outNL,1))
+
+figure
+plot(binnedX(:,1),outNL(:,1),'Color',[.5 0 0],'LineStyle','-.','LineWidth',1.5)
+hold on
+plot(binnedX(:,2),outNL(:,2),'Color',[0 0 .5],'LineStyle','-.','LineWidth',1.5)
+plot(binnedX(:,1),binnedY(:,1),'r','LineWidth',.5)
+plot(binnedX(:,2),binnedY(:,2),'k','LineWidth',.5)
+% plot(binnedX(:,2),binnedY(:,2),'b','LineWidth',.5)
+xlabel('input')
+ylabel('output')
+title('x shift')
+
+% legend('fit seq','fit rand','data seq','data rand')
+legend('fit seq','fit static','data seq','data static')
+
+% R2(binnedY(:,1),outNL(:,1))
+% 
+% R2(binnedY(:,2),outNL(:,2))
+% 
+[rsquaredOut,rootMSE]=rsquare(binnedY(:,1),outNL(:,1))
+% 
+[rsquaredOut,rootMSE]=rsquare(binnedY(:,2),outNL(:,2))
+
+MSE1 = immse(binnedY(:,1),outNL(:,1))
+MSE2 = immse(binnedY(:,2),outNL(:,2))
+
+%save! for fit figure
+youtSeq = binnedY(:,1);
+youtRand = binnedY(:,2);
+youtStatic = binnedY(:,3);
+xoutSeq = binnedX(:,1);
+xoutRand = binnedX(:,2);
+xoutStatic = binnedX(:,3);
+xoutSeqFitHZ = outNL(:,1);
+xoutRandFitHZ = outNL(:,2);
+ 
+mParams = fitMultiVarParams(binnedX(:,[1 2]),binnedY(:,[1 2]),0,starterParams);
+% outNL = multiGainNL(mParams,XforModel);
+outNL = multiGainNL(mParams,binnedX);
 
 
-if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Static = outputNonlinearity(nlParams,nlX);
-elseif saveFlag == 1 && strcmp(cellType,'ON Parasol')
-    MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Static = outputNonlinearity(nlParams,nlX);
-elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Static = outputNonlinearity(nlParams,nlX);
-elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Static = outputNonlinearity(nlParams,nlX);
-end
+xoutSeqFitGain = outNL(:,1);
+xoutRandFitGain = outNL(:,2);
+
+save('NLandFit.mat','youtSeq','youtRand','youtStatic','xoutSeq','xoutRand','xoutStatic','xoutSeqFitHZ','xoutRandFitHZ','xoutSeqFitGain','xoutRandFitGain');
+
+
+% nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),size(outNL,1))
+
+figure
+plot(binnedX(:,1),outNL(:,1),'Color',[.5 0 0],'LineStyle','-.','LineWidth',1.5)
+hold on
+plot(binnedX(:,2),outNL(:,2),'Color',[0 0 .5],'LineStyle','-.','LineWidth',1.5)
+plot(binnedX(:,1),binnedY(:,1),'r','LineWidth',.5)
+% plot(binnedX(:,2),binnedY(:,2),'b','LineWidth',.5)
+plot(binnedX(:,2),binnedY(:,2),'k','LineWidth',.5)
+xlabel('input')
+ylabel('output')
+title('gain change')
+
+% legend('fit seq','fit rand','data seq','data rand')
+legend('fit seq','fit static','data seq','data static')
+
+% R2(binnedY(:,1),outNL(:,1))
+
+% R2(binnedY(:,2),outNL(:,2))
+
+[rsquaredOut,rootMSE]=rsquare(binnedY(:,1),outNL(:,1))
+
+[rsquaredOut,rootMSE]=rsquare(binnedY(:,2),outNL(:,2))
+
+MSE1 = immse(binnedY(:,1),outNL(:,1))
+MSE2 = immse(binnedY(:,2),outNL(:,2))
+
+  
+
+% if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
+%     MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Static = outputNonlinearity(nlParams,nlX);
+% elseif saveFlag == 1 && strcmp(cellType,'ON Parasol')
+%     MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Static = outputNonlinearity(nlParams,nlX);
+% elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
+%     MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Static = outputNonlinearity(nlParams,nlX);
+% elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
+%     MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Static = outputNonlinearity(nlParams,nlX);
+% end
+
+
 
 %  x=-300:400;
 % nlfun = @(p,x)(p(1)*normcdf(p(2)*x+p(3),0,1));
@@ -791,9 +907,9 @@ save('MotionandNoise.mat','-append','MNONSmooth')
 save('MotionandNoise.mat','-append','MNOFFSmooth')
 
 %% Motion CS
- 
+dataType =1;
 count = 0;
-desiredSTD = 8;
+desiredSTD = 6;
 clear epochStorage 
 clear bgClass
 clear centerClass
@@ -819,8 +935,8 @@ for i = 1:length(epochs)
           centerBarDwell = epochs(i).meta.centerFrameDwell;
           motionTime = epochs(i).meta.motionTime;
           numBars = epochs(i).meta.numberOfCenterBars;
-%           && strcmp(egLabel,'Whole cell_inh')
-        if  surroundOrientation == 180 && centerBarOrientation == 180
+        
+        if  surroundOrientation == 90 && centerBarOrientation == 90 && strcmp(egLabel,'Control')
         protocolExample = i;
         count = count + 1;
         epochStorage(count,:) = epochs(i).epoch;
@@ -853,7 +969,7 @@ for i = 1:length(epochs)
 end
 
 saveGraph = 0;
-[meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph,desiredSTD);
+[meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph,desiredSTD,dataType);
 
 
 
@@ -929,7 +1045,7 @@ for k = 1:size(epochStorage,1)
           else
         spikeMatrix(k,:) = spikes;
 %         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
-psthMatrix(k,:) = psth(spikeMatrix(k,:),20,sampleRate,1);
+psthMatrix(k,:) = psth(spikeMatrix(k,:),10,sampleRate,1);
           end
 end
 
@@ -979,8 +1095,8 @@ axis([0 max(xaxis) 0 max(yaxis)+2])
 
 end
 
-function [meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph,STD1)
-dataType = 1;
+function [meanCollection, meanKey] = motionCS(epochs,bgClass,centerClass,contrastState,epochStorage,protocolExample,saveGraph,STD1,dataType)
+% dataType = 1;
 sampleRate = 10000;
 binRate = 1000;
 preTime = epochs(protocolExample).meta.preTime;
@@ -1006,7 +1122,7 @@ for k = 1:size(epochStorage,1)
         spikes = spikes';
         spikeMatrix(k,:) = spikes; 
         
-        psthMatrix(k,:) = psth(spikeMatrix(k,:),30,sampleRate,1);
+        psthMatrix(k,:) = psth(spikeMatrix(k,:),20,sampleRate,1);
 %         spikeMatrix(k,:) = spikes;
 %         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
@@ -1222,8 +1338,8 @@ mDuration=100;
 % 
 size(spikeMatrix);
 
-a=sum(spikeMatrix(posContrast(posSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-b=sum(spikeMatrix(posContrast(posRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+a=sum(psthMatrix(posContrast(posSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+b=sum(psthMatrix(posContrast(posRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
 % a=a/.1;
 % b=b/.1;
 
@@ -1234,8 +1350,8 @@ PCSerror = sem(a);
 PCR = mean(b);
 PCRerror = sem(b);
 
-c=sum(spikeMatrix(negContrast(negSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-d=sum(spikeMatrix(negContrast(negRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+c=sum(psthMatrix(negContrast(negSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+d=sum(psthMatrix(negContrast(negRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
 % c=c/.1;
 % d=d/.1;
 
@@ -1247,9 +1363,9 @@ NCSerror=sem(c);
 NCR = mean(d);
 NCRerror = sem(d);
 
-e=sum(spikeMatrix(posContrast(centerSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-f=sum(spikeMatrix(posContrast(centerRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-g=sum(spikeMatrix(posContrast(center180),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+e=sum(psthMatrix(posContrast(centerSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+f=sum(psthMatrix(posContrast(centerRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+g=sum(psthMatrix(posContrast(center180),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
 
 % e=e/.1;
 % f=f/.1;
@@ -1263,9 +1379,9 @@ CPCRerror = sem(f);
 CPC180 = mean(g);
 CPC180error = sem(g);
 
-h=sum(spikeMatrix(posContrast(centerRSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-i=sum(spikeMatrix(posContrast(centerRRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-j=sum(spikeMatrix(posContrast(centerR180),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+h=sum(psthMatrix(posContrast(centerRSeq),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+i=sum(psthMatrix(posContrast(centerRRand),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+j=sum(psthMatrix(posContrast(centerR180),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
 
 h=h;
 i=i;
@@ -1278,9 +1394,9 @@ rCPCRerror = sem(i);
 rCPC180 = mean(j);
 rCPC180error = sem(j);
 
-k=sum(spikeMatrix(negContrast(centerSeqNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-l=sum(spikeMatrix(negContrast(centerRandNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-m=sum(spikeMatrix(negContrast(center180Neg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+k=sum(psthMatrix(negContrast(centerSeqNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+l=sum(psthMatrix(negContrast(centerRandNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+m=sum(psthMatrix(negContrast(center180Neg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
 
 k=k;
 l=l;
@@ -1293,9 +1409,9 @@ CNCRerror = sem(l);
 CNC180 = mean(m);
 CNC180error = sem(m);
 
-n=sum(spikeMatrix(negContrast(centerRSeqNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-o=sum(spikeMatrix(negContrast(centerRRandNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
-p=sum(spikeMatrix(negContrast(centerR180Neg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+n=sum(psthMatrix(negContrast(centerRSeqNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+o=sum(psthMatrix(negContrast(centerRRandNeg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
+p=sum(psthMatrix(negContrast(centerR180Neg),((preTime)+(motionTime)-motionStart):((preTime)+(motionTime)+(motionEnd))),2);
 
 n=n;
 o=o;

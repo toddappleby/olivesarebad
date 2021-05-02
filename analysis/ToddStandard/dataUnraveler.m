@@ -17,17 +17,26 @@ ONSmoothC = 0;
 OFFSmoothC = 0;
 
 %% load FT first, give different name --- #1
-cd('E:\Data Analysis_2020\2020_0519')
-expDate = dir;
-cellName = '20200519Bc4.mat';
-load(cellName)
-frameTimings = epochs;
+% cd('E:\Data Analysis_2020\2020_0806') 2019 1107 bc7 sbc
+cellDate = "2020_1217"
+cellNum = "Ac2";
+
+loadDate = char(cellDate);
+loadDate = strcat(loadDate(1:4),loadDate(6:9));
+
+fileName = strcat(loadDate,cellNum,'.mat');
+
+directory = string("/Users/toddappleby/Documents/Data/Clarinet Exports/" + cellDate);
+
+cd(directory)
+load(fileName)
+% frameTimings = epochs;
 %% what protocols contained in data?
 
 uniqueProtocols = [];
 
 for z = 1:size(epochs,2)
-   list(z) = string(epochs(z).meta.displayName);    
+   list(z) = string(epochs(z).meta.displayName);
    
 %    allEpochData(z,1:length(epochs(z).epoch)) = epochs(z).epoch;
 end
@@ -38,12 +47,8 @@ uniqueProtocols = [uniqueProtocols; list(1)];%OK<AGROW>
 uniqueCheck = strcmp(uniqueProtocols(length(uniqueProtocols)),list);
 newIndex = find(uniqueCheck==0);
 list = list(newIndex);
-% also store epochs this way
 currentIndex = find(uniqueCheck==1);
-% protocolData = allEpochData(currentIndex,:);
 rawData{length(uniqueProtocols),1} = uniqueProtocols(length(uniqueProtocols));
-% rawData{length(uniqueProtocols),2} = protocolData;
-% allEpochData = allEpochData(newIndex,:);
 end
 
 uniqueProtocols = sort(uniqueProtocols) %#ok<NOPTS>
@@ -96,7 +101,7 @@ for k = 1:size(epochStorage,1)
         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
 end
-
+ 
 % stimTime = epochs(1).meta.stimTime;
 % tailTime = epochs(1).meta.tailTime;
 timings = [preTime stimOrig tailTime];
@@ -106,7 +111,6 @@ timings = [preTime stimOrig tailTime];
 % saveStuff.expNum = expNum;
 % saveStuff.OFFParasolC = OFFParasolC;
 % saveStuff.ONParasolC = ONParasolC;
-saveFlag=0;
 if saveFlag ==1
 [MNOFFParasol,MNONParasol] = CRF(spikeMatrix,psthMatrix,contrast,timings,saveStuff,MNOFFParasol,MNONParasol);
 else
@@ -116,8 +120,11 @@ end
 %% chirp regurgitation
 dataType = 1;
 clear epochStorage
-saveFlag = 1;
+saveFlag = 0;
 count =0;
+maxFreq = 10;
+
+drawStruct = struct();
 
  
 if dataType == 1
@@ -137,7 +144,7 @@ for i = 1:length(epochs)
 
 
 
-   if strcmp(displayName,'Chirp Stimulus') && strcmp(oAnalysis,'extracellular')
+   if strcmp(displayName,'Chirp Stimulus') && strcmp(oAnalysis,'extracellular') && epochs(i).meta.frequencyMax == maxFreq
 count = count + 1;
 epochStorage(count,:) = epochs(i).epoch;
 
@@ -148,6 +155,21 @@ preTime = epochs(i).meta.preTime;
 stimTime = epochs(i).meta.stimTime;
 
 tailTime = epochs(i).meta.tailTime;
+
+drawStruct(count).frequencyMax = epochs(i).meta.frequencyMax;
+drawStruct(count).frequencyMin = epochs(i).meta.frequencyMin;
+drawStruct(count).frequencyTime = epochs(i).meta.frequencyTime;
+drawStruct(count).interTime = epochs(i).meta.interTime;
+drawStruct(count).frequencyContrast = epochs(i).meta.frequencyContrast;
+drawStruct(count).contrastMax = epochs(i).meta.contrastMax;
+drawStruct(count).contrastMin = epochs(i).meta.contrastMin;
+drawStruct(count).contrastTime = epochs(i).meta.contrastTime;
+drawStruct(count).contrastFrequency = epochs(i).meta.contrastFrequency;
+drawStruct(count).preTime = epochs(i).meta.preTime;
+drawStruct(count).tailTime = epochs(i).meta.tailTime;
+drawStruct(count).stepTime = epochs(i).meta.stepTime;
+drawStruct(count).sampleRate = epochs(i).meta.sampleRate;
+drawStruct(count).stepContrast = epochs(i).meta.stepContrast;
 
    end
 
@@ -164,7 +186,7 @@ else
        oAnalysis = epochs(i).meta.onlineAnalysis;
    end
 
-   if strcmp(displayName,'Chirp Stimulus') && strcmp(oAnalysis,'analog') && strcmp(egLabel,'Whole cell_inh')
+   if strcmp(displayName,'Chirp Stimulus') && strcmp(oAnalysis,'analog') 
 count = count + 1;
 epochStorage(count,:) = epochs(i).epoch;
 
@@ -219,28 +241,176 @@ end
 
 figure(3)
 xvalsChirp = linspace(1,23000,230000);
-plot(xvalsChirp,mean(psthMatrix)')
+plot(xvalsChirp,mean(psthMatrix,1)')
+
+figure(2)
+chirpStim = drawChirp(drawStruct);
+plot(mean(epochStorage,1)/max(mean(epochStorage,1))+3)
+hold on
+plot(chirpStim)
+
+figure(4)
+plot(mean(psthMatrix,1)/max(mean(psthMatrix,1))+2)
+hold on
+plot(chirpStim)
+
+figure(7)
+plot(mean(spikeMatrix,1)/max(mean(spikeMatrix,1))+1.1)
+hold on
+plot(chirpStim)
+
+freqDuration = drawStruct(1).frequencyTime * 10; %freq sweep in time points ! 
+%*** Frequency sweep stuff.  There might be more to do here.  
+% chirpFFT(psthMatrix,drawStruct);
+
+
+%**** Contrat sweep -- problematic if length of sweep changes between
+%epochs.  I'll have to switch to the normal sorting stuff eventually
+% meanRate = mean(mean(psthMatrix(:,140000:145000),2),1);
+% contrastPeaks = findpeaks(chirpStim(1,145000:225000));
+% 
+% contrastPeaks = 2*(contrastPeaks-.5); % contrast relative to bg
+% contrastResponse = smoothdata(mean(psthMatrix(:,145000:225000),1)); %only looking for peak effect,so smoothing fine--actually might make peak rate more realistic becuz binning makes peak v high
+% contrastResponsePeaks = findpeaks(contrastResponse,'MinPeakDistance',2500); %find data peaks from smoothed contrast resp data
+% contrastResponsePeaks = contrastResponsePeaks - meanRate; %subtract mean rate for low contrast effect
+% figure(8)
+% if length(contrastPeaks) == length(contrastResponsePeaks)
+% plot(contrastPeaks,contrastResponsePeaks); %probably better way to ensure matching peaks, but above lines should make them match anyway
+% title('Contrast Sweep: Peak Response at each Cycle')
+% xlabel('Contrast (relative intensity)')
+% ylabel('Peak Spike Rate (Hz)')
+% else
+%     peakDiffy = abs(length(contrastResponsePeaks) - length(contrastPeaks));
+%         if length(contrastResponsePeaks) > length(contrastPeaks)
+%             
+%             plot(contrastPeaks,contrastResponsePeaks((peakDiffy+1):end)); %remove initial peaks (usually these are the problem...)
+%             disp('WARNING: MISMATCHED PEAKS, SUGGEST MANUAL CHECK OF PEAKS')
+%         elseif length(contrastResponsePeaks) < length(contrastPeaks)
+%             contrastResponsePeaks = [zeros(1,peakDiffy) contrastResponsePeaks];
+%             plot(contrastPeaks,contrastResponsePeaks)
+%         end
+% end
+%***
 
 if saveFlag == 1 
-    meanChirp = mean(psthMatrix,1)';
-    xvalsChirpSave = xvalsChirp';
-%     saveName = strcat('chirp_',cellName)
-    save('Chirp.mat','meanChirp','xvalsChirpSave')
+     maxFreq = drawStruct(size(psthMatrix,1)).frequencyMax;
+     meanChirp = mean(psthMatrix,1)';
+     xvalsChirpSave = xvalsChirp';
+%      saveName = strcat('chirp_',cellName);
+contrastPeaks = contrastPeaks';
+contrastResponsePeaks = contrastResponsePeaks';
+     save('Chirp.mat','meanChirp','xvalsChirpSave','maxFreq')
+     save('chirpContrast.mat','contrastPeaks','contrastResponsePeaks')
+end
+% chirp tests
+
+freqStart = (drawStruct(1).preTime + drawStruct(1).stepTime*2 + drawStruct(1).interTime*2)*10;%pts
+freqEnd = freqStart + drawStruct(1).frequencyTime * 10; %pts
+
+freqDeriv = diff(chirpStim(freqStart:freqEnd)); %velocity
+
+freqSweep = chirpStim(freqStart:freqEnd);
+
+chirpSpikes = mean(spikeMatrix(:,freqStart:freqEnd),1); 
+
+chirpSpikesOff = chirpSpikes(freqDeriv <0);
+chirpSpikesOn = chirpSpikes(freqDeriv>0);
+
+offLogical = freqDeriv < 0;
+offVector = find(offLogical ==1);
+onLogical = freqDeriv>0;
+onVector = find(onLogical ==1);
+g=1;
+h=1;
+offCycleSpikes = [];
+onCycleSpikes = [];
+escapeVectorOff=[];
+escapeVectorOn=[];
+for t = 2:length(offVector)
+    if offVector(t) - offVector(t-1) == 1
+        escapeVectorOff(g,t-1) = offVector(t-1); % works because first cycle always biggest
+    else
+        g=g+1;
+    end
+    
+
+end
+    
+for t = 2:length(onVector)
+    if onVector(t) - onVector(t-1) == 1
+        escapeVectorOn(h,t-1) = onVector(t-1); % works because first cycle always biggest
+    else
+        h=h+1;
+    end
+end
+
+for b = 1 : g
+   
+     offOut = escapeVectorOff(b,escapeVectorOff(b,:)>0);
+     cutOut1 = floor(.05*length(offOut));
+     onOut = escapeVectorOn(b,escapeVectorOn(b,:)>0);
+     cutOut2 = floor(.05*length(onOut));
+     
+     offCycleSpikes(1,b)=sum(chirpSpikes(1,offOut(cutOut1:end)),2);
+     onCycleSpikes(1,b)=sum(chirpSpikes(1,onOut(cutOut2:end)),2);
+end
+
+% for c = 1:h
+freqXVals = linspace(drawStruct(1).frequencyMin,drawStruct(1).frequencyMax,b);
+
+figure(9)
+plot(freqXVals,offCycleSpikes,'r')
+hold on
+
+plot(freqXVals,onCycleSpikes,'b')
+
+
+legend('off response','on response')
+xlabel('frequency sweep (Hz)')
+ylabel('mean spike count')
+
+%hill
+
+coef = [1 -2];
+% fitcoef = nlinfitsome([false false], freq, amp ./ max(amp), @hill, coef);
+% fit = hill(fitcoef, freq);
+freqMax = drawStruct.frequencyMax;
+tester = linspace(0,freqMax,1000);
+
+maxOff = max(offCycleSpikes);
+maxOn = max(onCycleSpikes);
+if maxOn > maxOff 
+    max1 = maxOn;
+    max2 = 1;
+else
+    max2 = maxOff;
+    max1 = 1;
+    
 end
 
 
-% figure(2)
-% plot(mean(epochStorage,1))
+fitcoef = nlinfitsome([false false], freqXVals,offCycleSpikes./max(offCycleSpikes),@hill,coef);
+fit = hill(fitcoef,tester);
+figure(51)
+plot(tester,fit/max1,'r')
+hold on
+fitcoef = nlinfitsome([false false], freqXVals,onCycleSpikes./max(onCycleSpikes),@hill,coef);
+fit = hill(fitcoef,tester);
+plot(tester,fit/max2,'b')
+
+
 
 %% MTF spots and annuli
-
+dataType=1;
+% currWanted='excitation';
+currWanted='inhibition';
 splitFactors = ["contrast","stimulusClass","temporalFrequency","temporalClass","chromaticClass","radius"];
 % splitFactors = ["temporalFrequency","searchAxis","barSize","position"];
 runSplitter = ["radius"]; 
 
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 10;
+desiredSTD = 5;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -251,6 +421,7 @@ clear epochStorage
 
 stringComparer = [];
 stringComparer = string(stringComparer);
+if dataType ==1
 for i = 1:length(epochs)
     
   
@@ -266,11 +437,11 @@ for i = 1:length(epochs)
 
    
 
-%    if strcmp(displayName,'S MT Fspot') 
+%    if strcmp(displayName,' Fspot') 
    if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,'Control')
     temporalClass = epochs(i).meta.temporalClass;
-%     if strcmp(temporalClass,'sinewave')
-       if strcmp(temporalClass,'pulse')
+    if strcmp(temporalClass,'sinewave')
+%        if strcmp(temporalClass,'pulse') 
         count = count + 1;
         for s = 1:length(splitFactors)
             if ischar(getfield(epochs(i).meta,splitFactors(s)))
@@ -295,6 +466,55 @@ tfreq(count) = epochs(i).meta.temporalFrequency;
    end
 end
 
+else
+    for i = 1:length(epochs)
+    
+  
+   displayName = epochs(i).meta.displayName;
+   egLabel = epochs(i).meta.epochGroupLabel;
+%    recording = epochs(i).meta.recordingTechnique;
+  
+   
+  if isfield(epochs(i).meta,'onlineAnalysis')
+      oAnalysis = epochs(i).meta.onlineAnalysis;
+  end
+  
+currType=[];
+          if strcmp(egLabel,'Whole cell_exc')
+           currType = 'excitation';
+       elseif strcmp(egLabel,'Whole cell_inh')
+           currType = 'inhibition';
+       end
+
+%    if strcmp(displayName,' Fspot') 
+   if strcmp(displayName,'S MT Fspot') && strcmp(currWanted,currType)
+    temporalClass = epochs(i).meta.temporalClass;
+    if strcmp(temporalClass,'sinewave')
+%        if strcmp(temporalClass,'pulse')
+        count = count + 1;
+        for s = 1:length(splitFactors)
+            if ischar(getfield(epochs(i).meta,splitFactors(s)))
+                splitCell{2,s} = [splitCell{2,s} string(getfield(epochs(i).meta,splitFactors(s)))];    
+            else
+                splitCell{2,s}= [splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+            end
+        end
+        
+      
+        
+%         width(count) = epochs(i).meta.barWidth;
+tfreq(count) = epochs(i).meta.temporalFrequency;
+        epochStorage(count,:) = epochs(i).epoch;
+%         apertureRadius(count) = epochs(i).meta.apertureRadius;
+%         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
+        preTime = epochs(i).meta.preTime;
+        stimTime = epochs(i).meta.stimTime;
+        tailTime = epochs(i).meta.tailTime;
+%         angleO(count) = epochs(i).meta.orientation;
+   end
+  end
+ end
+end
 stimOrig = stimTime;
 sampleRate = 10000;
 % preTime = epochs(1).meta.preTime;
@@ -354,7 +574,7 @@ while ~isempty(combos)
     combos(1,:) = [];
 end
 
-
+if dataType == 1
 for k = 1:size(epochStorage,1)
     
 [spikes, finalSTD, finalDiscard] = convertSpikesAdree(epochStorage(k,:), stimTime, ...
@@ -366,6 +586,16 @@ for k = 1:size(epochStorage,1)
         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
 end
+
+else
+
+
+    for k = 1:size(epochStorage,1)
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+    end
+end
+
 timings = [preTime stimOrig tailTime];
 params = struct();
 params.saveGraph = 0;
@@ -375,10 +605,10 @@ params.dataType = 1;
 params.cellName= cellName;
 % saveGraph = 0;
 % stimName = 'Grating';
-% freqAnalysis(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
-simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+freqAnalysis(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+% simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% Bar centering 
-
+desiredSTD = 10;
 countx = 0;
 county = 0;
 clear epochStorage;
@@ -386,7 +616,7 @@ epochStorageX = [];
 epochStorageY = [];
 YspikeMatrix = [];
 XspikeMatrix = [];
-positionX = [];
+positionX = []; 
 positionY = [];
 
 for i = 1:length(epochs)
@@ -425,7 +655,7 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 7;
+
 if ~isempty(epochStorageX)
     spikeMatrixX = zeros(size(epochStorageX,1),size(epochStorageX,2));
     psthMatrixX = zeros(size(epochStorageX,1),size(epochStorageX,2));
@@ -470,17 +700,17 @@ timings = [preTime stimOrig tailTime];
 
 centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,sampleRate)
 %% Simple Response (Color spot and OMS)
-dataType = 0; 
+dataType = 1; 
+desiredSTD = 5;
 
-
-splitFactors = ["stimulusClass"];
-% splitFactors = ["spaceConstant"];
+% splitFactors = ["stimulusClass"];
+splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 
 % splitFactors = ["chromaticClass"];
 % splitFactors = ["led"];
 % splitFactors = ["backgroundIntensity","spotIntensity"];
 
-protocolID = "Object Motion Texture";
+protocolID = "Object Motion Dots";
 
 splitCell = cell(2,length(splitFactors));
 
@@ -517,7 +747,7 @@ for i = 1:length(epochs)
    egLabel = epochs(i).meta.epochGroupLabel;
 %    if strcmp(displayName,'Chromatic Spot') && ~strcmp(recordingTechnique,'whole-cell') && ~strcmp(recordingTechnique,'EXCITATION') && ~strcmp(recordingTechnique,'INHIBITION')
 %         if strcmp(displayName,'Led Pulse')
-if strcmp(displayName,protocolID) && strcmp(egLabel,'Control')
+if strcmp(displayName,protocolID) && strcmp(egLabel,'Control') && ~strcmp(recordingTechnique,'whole-cell')
         for s = 1:length(splitFactors)
             
         splitCell{2,s}=[splitCell{2,s} string(getfield(epochs(i).meta,splitFactors(s)))];
@@ -529,7 +759,7 @@ if strcmp(displayName,protocolID) && strcmp(egLabel,'Control')
         epochStorage(count,1:length(epochs(i).epoch)) = epochs(i).epoch;
         preTime = epochs(i).meta.preTime;
         stimTime = epochs(i).meta.stimTime;
-        tailTime = epochs(i).meta.tailTime;
+        tailTime = epochs(i).meta.tailTime; 
       
    end
 end
@@ -566,13 +796,20 @@ sampleRate = 10000;
 % stimTime = epochs(1).meta.stimTime;
 stimTime = [preTime/(1/10000) (preTime+stimTime)/(1/10000)];
 stimTime = stimTime/1000;
-desiredSTD = 5;
+
 spikeMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
-allSets=zeros(size(splitCell{2,1},2),size(splitCell,2)-1);
+allSets=strings(size(splitCell{2,1},2),size(splitCell,2)-1);
 clear allSets
-for o = 1:size(splitCell,2)
+
+if size(splitCell,2)>1
+    subtractSorter = 1;
+else
+    subtractSorter = 0;
+end
+
+for o = 1:size(splitCell,2) - subtractSorter %-1 because last parameter split is x val
     for p = 1:size(splitCell{2,1},2)
         allSets(p,o) = splitCell{2,o}(1,p);       
     end
@@ -583,13 +820,15 @@ comboOut = combos;
 clear indexHolder
 counter = 0;
 
-if ~isnan(str2double(combos))
-    1
-combos = str2double(combos); % trying to fix the problem of sorting by first digit (strings) vs numeric value (doubles)
-combos = sort(combos);
-combos = string(combos);
-end
+% if ~isnan(str2double(combos))
+%     1
+% combos = str2double(combos); % trying to fix the problem of sorting by first digit (strings) vs numeric value (doubles)
+% combos = sort(combos);
+% combos = string(combos);
+% end
 % while size(comboOut,1) ~= size(combos,1)
+
+
 while ~isempty(combos)
     counter = counter +1;
     istherenobetterway = combos(1,:) ==allSets;
@@ -635,13 +874,14 @@ case("Object Motion Grating")
     params.moveTime = 1;
 end
 
-params.saveGraph =0;
+params.saveGraph =1;
 params.cellName = cellName;
 params.protocolID = protocolID;
 
 timings = [preTime stimOrig tailTime];
- simpleResponse(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
-%% ex Spots
+
+simpleResponse(spikeMatrix,psthMatrix,epochStorage,timings,splitCell,indexHolder,params);
+%%  Expanding Spots
 dataType = 1; %0 if currents
 currAnalysis = 'excitation'; %exc or inh for expanding spots protocol
 % currAnalysis = 'inhibition';
@@ -652,9 +892,9 @@ splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"];
 
 runSplitter = ["currentSpotSize"];
 
-leakThreshold = 200;
+leakThreshold = 30;
 
-desiredSTD = 4;
+desiredSTD =3;
 % 
 splitCell = cell(2,length(splitFactors));
 
@@ -701,7 +941,7 @@ for i = 1:length(epochs)
       oAnalysis = epochs(i).meta.onlineAnalysis;
   end
    
-    if strcmp(displayName,'Expanding Spots')
+    if strcmp(displayName,'Expanding Spots') 
         
         
        
@@ -730,7 +970,7 @@ for i = 1:length(epochs)
        end 
     end
    
-if strcmp(displayName,'Expanding Spots') && leakThreshold>leakC && leakC>-leakThreshold && strcmp(oAnalysis,'extracellular')
+   if strcmp(displayName,'Expanding Spots') && leakThreshold>leakC && leakC>-leakThreshold
 
        
 %        if strcmp(displayName,'S MT Fspot') && strcmp(oAnalysis,'none') && xpreTime == 250 && strcmp(chroma,'blue')
@@ -757,15 +997,9 @@ else
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
-   recording = epochs(i).meta.recordingTechnique;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
    if strcmp(displayName,'Expanding Spots')
 
-            
-  if isfield(epochs(i).meta,'onlineAnalysis')
-      oAnalysis = epochs(i).meta.onlineAnalysis;
-  end
-       
-       
        leakC = epochs(i).epoch(1); 
       if manualParse
             %below allows manual entry of appropriate leak
@@ -789,8 +1023,8 @@ else
            currType = 'inhibition'
        end
    end
-       if strcmp(displayName,'Expanding Spots') && strcmp(oAnalysis,'exc')
-%&& strcmp(currType,currAnalysis)
+       if strcmp(displayName,'Expanding Spots') && strcmp(currType,currAnalysis)
+
             count = count + 1;
             
             for s = 1:length(splitFactors)
@@ -864,8 +1098,8 @@ else
     
 
     for k = 1:size(epochStorage,1)
-        spikeMatrix(k, :) = (epochStorage(k, :) - mean(epochStorage(k, 1:1000)))/1000;
-        psthMatrix(k,:) = (epochStorage(k, :) - mean(epochStorage(k, 1:1000)))/1000;
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
     end
 end
 timings = [preTime stimOrig tailTime];
@@ -873,7 +1107,6 @@ params = struct();
 params.saveGraph = 0;
 params.stimName = 'expanding';
 params.dataType = dataType;
-params.cellName = cellName;
 % saveGraph = 0;
 % stimName = 'Grating';
 simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
@@ -882,13 +1115,12 @@ simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 dataType =1;
 currWanted = 'excitation';
 % currWanted = 'inhibition';
-splitFactors = ["apertureRadius","barWidth","temporalFrequency","orientations","orientation"];
+splitFactors = ["apertureRadius","barWidth","temporalFrequency","orientation"];
 runSplitter = ["orientations"]; %might just set this manually because not gonna change? number could change if the protocol run was cut short
 %this is why Greg did this the way he did .... maybe.  gonna have to figure
 %this out by TIME??? which seems rough
 
-desiredSTD = 4;
-
+desiredSTD = 6;
 
 splitCell = cell(2,length(splitFactors));
 
@@ -901,19 +1133,19 @@ clear epochStorage
 clear width
 clear apertureRadius
 clear temporalFrequency
-clear angle0l
+clear angle0
 
 if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
-%    egLabel = epochs(i).meta.epochGroupLabel;
-%    recording = epochs(i).meta.recordingTechnique;
+   egLabel = epochs(i).meta.epochGroupLabel;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
    if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis;
    end
    
-   if strcmp(displayName,'Grating DSOS') && strcmp(oAnalysis,'extracellular')
+   if strcmp(displayName,'Grating DSOS') && strcmp(egLabel,'Control')  && strcmp(egLabel,'Control')
        count=count+1;
         for s=1:length(splitCell)  
           if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
@@ -923,7 +1155,6 @@ for i = 1:length(epochs)
           end
 
             splitCell{2,s}=[splitCell{2,s} stringedEntry];
-            
         end
 
 %         width(count) = epochs(i).meta.barWidth;
@@ -942,7 +1173,7 @@ else
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
-   recording = epochs(i).meta.recordingTechnique;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
    if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis
        leakC = epochs(i).epoch(1); 
@@ -951,23 +1182,25 @@ else
        elseif leakC > 50
            currType = 'inhibition'
        end
+       
+       if strcmp(egLabel,'Whole cell_exc')
+           currType = 'excitation';
+       elseif strcmp(egLabel,'Whole cell_inh')
+           currType = 'inhibition';
+       end
    end
        if strcmp(displayName,'Grating DSOS') && strcmp(oAnalysis,'analog') && strcmp(currType,currWanted)
-           
-            barSizeFind = contains(splitFactors,'barSize');
-          for s = 1:length(splitFactors)
-            if barSizeFind(s)
-                count2=count2+1
-               bSizeDisco = getfield(epochs(i).meta,splitFactors(s)); %disonnected bar size (as length 2 array) 
-               strTransferTicket = strcat(num2str(bSizeDisco(1)),num2str(bSizeDisco(2)))
-               barSizeCombined = str2num(strTransferTicket);
-               splitCell{2,s}=[splitCell{2,s} barSizeCombined];
-            else
-            splitCell{2,s}=[splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
-           
-            end
+           count = count + 1;
+        for s=1:length(splitCell)  
+          if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
+              stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
+          elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'char')
+              stringedEntry = convertCharsToStrings(getfield(epochs(i).meta,splitFactors(s)));
           end
-            count = count + 1;
+
+            splitCell{2,s}=[splitCell{2,s} stringedEntry];
+        end
+            
     %         width(count) = epochs(i).meta.barWidth;
             epochStorage(count,:) = epochs(i).epoch;
     %         apertureRadius(count) = epochs(i).meta.apertureRadius;
@@ -1068,9 +1301,8 @@ params = struct();
 params.saveGraph = 0;
 params.stimName = 'Grating';
 params.killCycle1 = [];  %or [] (not 0)
-timings(1)=timings(1)*2;
+% timings(1)=timings(1)*2;
 params.time = timings;
-params.cellName = cellName;
 % params.killCycle1 = 'false';
 % saveGraph = 0;
 % stimName = 'Grating';
@@ -1085,6 +1317,7 @@ splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
+subtractBGrate=1;
 
 desiredSTD = 5;
 
@@ -1102,7 +1335,7 @@ if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
-%    recordingTechnique = epochs(i).meta.recordingTechnique;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
      egLabel = epochs(i).meta.epochGroupLabel;
     if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis;
@@ -1113,7 +1346,7 @@ for i = 1:length(epochs)
     end
     
    
-              if strcmp(displayName,'Oriented Bars') && strcmp(oAnalysis,'extracellular')
+              if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,'Control') && strcmp(egLabel,'Control')
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
                       stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
@@ -1136,6 +1369,9 @@ for i = 1:length(epochs)
 end
        
 
+        
+      
+ 
 
 
 else
@@ -1143,12 +1379,12 @@ else
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
-   recording = epochs(i).meta.recordingTechnique;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
       egLabel = epochs(i).meta.epochGroupLabel;
    if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis
        leakC = epochs(i).epoch(1); 
-       if leakC<-10
+       if leakC<-50
            currType = 'excitation'
        elseif leakC > 0
            currType = 'inhibition'
@@ -1238,30 +1474,29 @@ end
 
 else   
     for k = 1:size(epochStorage,1)
-        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:100));
-        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:100));
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:5000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:5000));
     end
 end
 
 params = struct();
 params.saveGraph =0;
-params.saveIter = 2;
+params.saveIter = 1;
 params.stimName = 'bars';
-params.threshold = 0;
-params.dataType = dataType;
+params.bgRate = subtractBGrate;
 timings = [preTime stimOrig tailTime];
 orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% MOVING BAR
 
 dataType = 1; %0 if currents
-splitFactors = ["intensity","barSize","backgroundIntensity","speed","orientation"];
+splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation"];
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
-leakC = 200;
+leakC = -50;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 8;
+desiredSTD = 5;
 
 
 for g = 1:length(splitCell)
@@ -1275,13 +1510,13 @@ if dataType == 1
 for i = 1:length(epochs)
   
    displayName = epochs(i).meta.displayName;
-%    recordingTechnique = epochs(i).meta.recordingTechnique;
-%     egLabel = epochs(i).meta.epochGroupLabel;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
+    egLabel = epochs(i).meta.epochGroupLabel;
   if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis;
    end
    
-   if strcmp(displayName,'Moving Bar') && strcmp(oAnalysis,'extracellular')
+   if strcmp(displayName,'Moving Bar') && strcmp(egLabel,'Control')
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
                       stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
@@ -1307,17 +1542,14 @@ else
   
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
-   recording = epochs(i).meta.recordingTechnique;
+   recordingTechnique = epochs(i).meta.recordingTechnique;
    if isfield(epochs(i).meta,'onlineAnalysis')
        oAnalysis = epochs(i).meta.onlineAnalysis;
        leakC = epochs(i).epoch(1); 
    end
 
-%        if strcmp(displayName,'Moving Bar') && strcmp(oAnalysis,'analog') && leakC < 0
-           if strcmp(displayName,'Moving Bar') && strcmp(oAnalysis,'analog') && strcmp(egLabel,'Whole cell_exc')
-       
-         
-          
+       if strcmp(displayName,'Moving Bar') && strcmp(oAnalysis,'analog') && strcmp(egLabel,'Whole cell_exc')
+           leakC
             barSizeFind = contains(splitFactors,'barSize');
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
@@ -1331,7 +1563,6 @@ else
             count = count + 1;
     %         width(count) = epochs(i).meta.barWidth;
             epochStorage(count,:) = epochs(i).epoch;
-            
     %         apertureRadius(count) = epochs(i).meta.apertureRadius;
     %         temporalFrequency(count) = epochs(i).meta.temporalFrequency;
             intensity(count) = epochs(i).meta.intensity;
@@ -1396,8 +1627,8 @@ end
 
 else   
     for k = 1:size(epochStorage,1)
-        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
-        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
+        spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:5000));
+        psthMatrix(k,:) = epochStorage(k, :) - mean(epochStorage(k, 1:5000));
     end
 end
 
@@ -1406,11 +1637,7 @@ params.saveGraph =0;
 %grating,bars
 params.stimName = 'moving bar';
 params.saveIter = 1;
-params.recordTime =10900:35000;
-% params.recordTime = 5000:8500; %end is 35000
-% params.recordTime = 1:35000; %end is 35000
-params.threshold = 40;
-params.dataType = dataType;
+params.Region = 7500:11000;
 timings = [preTime stimOrig tailTime];
 orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 
@@ -1966,7 +2193,7 @@ end
 
 function CRF(spikeMatrix,psthMatrix,radius,timings,saveStuff)
 
-sampleRate = 1000
+
 timings = timings * 10;
 uniqueR = unique(radius);
 uniqueR = sort(uniqueR);
@@ -1975,15 +2202,13 @@ yaxis = [];
 for p = 1:length(uniqueR)
     
     cSpot = find(radius == uniqueR(p));
-     data = mean(spikeMatrix(cSpot,:),1);
-     binnedData = BinSpikeRate(data(timings(2)-timings(1):sum(timings)), 100, sampleRate)
-    [F,phase] = frequencyModulation(binnedData,100,4,'avg',1:2,1);
     xaxis = [xaxis mean(radius(cSpot))];
-    yaxis = [yaxis F(1)];
+    yaxis = [yaxis mean(sum(spikeMatrix(cSpot',timings(1):timings(1)+timings(2)),2))];
 
 end
 
-
+xaxis
+yaxis
 
 % if saveStuff.flag == 1 && strcmp(saveStuff.cellType,'OFF Parasol')
 %     disp('accessed')

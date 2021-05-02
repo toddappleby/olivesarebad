@@ -25,7 +25,7 @@ for i = 1:length(epochs)
        oAnalysis = epochs(i).meta.onlineAnalysis;
     end
    
-              if strcmp(displayName,'Spatial Noise') && strcmp(oAnalysis,'extracellular')  
+              if strcmp(displayName,'Spatial Noise') && strcmp(egLabel,'Control')  
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
                       stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
@@ -135,6 +135,6 @@ end
 %% plot test 2
 for p = 1:6
 subplot(2,3,p)
-imagesc(allM(:,:,p+4))
+imagesc(allM(:,:,p+1))
 title(p+1)
 end

@@ -46,36 +46,31 @@ figure(10); clf; hold on
 
     figure(a)
     subplot(3,1,1);
-    plot(uniqueRadii, avgF1(1:length(uniqueRadii)));
+    plot(uniqueRadii, avgF1(1:length(uniqueRadii))*1e-4);
 %     titleString = strcat({'F1 Resp'}, num2str(indexHolder{1,1}));
     title('F1 Resp')
     xlabel(analysisSplitters(1:3))
     hold on
     subplot(3,1,2);
-    plot(uniqueRadii, avgF2(1:length(uniqueRadii)));
+    plot(uniqueRadii, avgF2(1:length(uniqueRadii))*1e-4);
 %     titleString = strcat({'F2 Resp'}, num2str(indexHolder{1,1}));
     title('F2 Resp')
     xlabel(num2str(indexHolder{1,a}'))
     
     subplot(3,1,3);
-    plot(uniqueRadii, phaser(1:length(uniqueRadii)));
+    plot(uniqueRadii, phaser(1:length(uniqueRadii))*1e-4);
 %     titleString = strcat({'Spike Count'}, num2str(indexHolder{1,1}));
     title('p h a s e')
     xlabel(analysisSplitters(1:3))
     
    figure(a+3)
    subplot(2,1,1)
-   plot(uniqueRadii, avgF1(1:length(uniqueRadii)),'Color','b');
+   plot(uniqueRadii, avgF1(1:length(uniqueRadii))*1e-4,'Color','b');
    hold on 
-   plot(uniqueRadii, avgF2(1:length(uniqueRadii)),'Color','r');
+   plot(uniqueRadii, avgF2(1:length(uniqueRadii))*1e-4,'Color','r');
    subplot(2,1,2)
-   plot(uniqueRadii, phaser(1:length(uniqueRadii)));
+   plot(uniqueRadii, phaser(1:length(uniqueRadii))*1e-4);
    
-%    saveName = strcat('mtfSpot_',params.cellName);
-   savedF1 = avgF1(1:length(uniqueRadii));
-   savedF1=savedF1';
-   uniqueRadiiSave = uniqueRadii';
-   save('mtfSpot.mat','uniqueRadiiSave','savedF1')
    
    
    

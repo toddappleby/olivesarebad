@@ -1,7 +1,7 @@
 % load data -- #2
- cd('E:\Data Analysis_2020\2020_1118\')
- fileName = '20201118Bc3.mat';
- saveFile = "20201118Bc5_CenterSurround";
+ cd('E:\Data Analysis_2020\2020_0611\')
+ fileName = '20200611Bc1.mat';
+ saveFile = "20200611Bc1_CenterSurround";
  load(fileName)
 
 uniqueProtocols = [];
@@ -31,7 +31,7 @@ uniqueProtocols = sort(uniqueProtocols) %#ok<NOPTS>
 dataType = 1; %0 if currents
 nameCurrent = "Whole cell_exc"; % either Whole cell_exc or Whole cell_inh
 splitFactors = ["maskDiameter","apertureDiameter","stimulusIndex"];
-desiredSTD = 6;
+desiredSTD = 10;
 splitCell = cell(2,length(splitFactors));
 
 for g = 1:length(splitCell)
@@ -62,7 +62,7 @@ for i = 1:length(epochs)
        end
     end
    currType='yes';
-   if strcmp(displayName,'Doves Movie') && strcmp(egLabel,'Control')
+   if strcmp(displayName,'Doves Movie') && strcmp(currType,'yes')
         
         count = count + 1;
         for s = 1:length(splitFactors)
@@ -180,9 +180,9 @@ params.dataType = dataType;
 params.saveFile = saveFile;
 % saveGraph = 0;
 % stimName = 'Grating';
-DOVES(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+DOVES(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %%
-function DOVES(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params)
+function DOVES(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params)
 
 sampleRate = 10000;
 stimStart = (timings(1)*1e-3)*sampleRate+1;
@@ -206,52 +206,15 @@ spotIntensityPlace = find(strcmp(analysisSplitters,"spotIntensity")==1);
             offResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));                
             
             if params.dataType ==1
-                
             psthData(b,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
             figure(10); hold on
             subplot(1,size(indexHolder,2),a)
             plot(psthData(b,:)+(240*(b-1)))
             title(indexHolder{1,a})
-            
-%             if b == 2
-%                 
-%                 psthData(b,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
-%                 figure(100)
-%                 hold on
-%                 plot(psthData(b,:)+700,'Color',[0 .5 0])
-%                 
-%             end
-                
-            
-            if a == 2
-                
-            psthData(b,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
-            figure(15); hold on
-            
-            plot(psthData(b,:)+(330*(b-1)))
-            title(indexHolder{1,a})
-            
-                if b == 3
-                
-                psthData(b,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
-                figure(100)
-                hold on
-                plot(psthData(b,:)+700,'Color','r')
-                
-                end
-            
-            end
-            
             figure(11); hold on
             subplot(1,size(indexHolder,2),a)
             spikeData(b,:) = sum(spikeMatrix(sortedIndex(finalInd),:),1);
             plot(spikeData(b,:)+(2*(b-1)))
-            title(indexHolder{1,a})
-%             
-            rawData(b,:) = mean(epochStorage(sortedIndex(finalInd),:),1);
-            figure(12); hold on
-            subplot(1,size(indexHolder,2),a)
-            plot(rawData(b,:)+(325*(b-1)))
             title(indexHolder{1,a})
             else
             psthData(b,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
@@ -277,25 +240,25 @@ spotIntensityPlace = find(strcmp(analysisSplitters,"spotIntensity")==1);
 labels = ["center","fullfield","surround"];
 cellType = "offParasol_";
 
-for e = 1:length(indexHolder)-1
+for e = 1:length(indexHolder)
  
     for g = 1:length(uniqueIndex)
         
         picIndex = find(splitCell{2,size(splitCell,2)}==uniqueIndex(g));
 
         stimPlacer = ismember(indexHolder{2,1},picIndex); % not sure how to automate this part, hopefully remains the same each time (to get full field image only);
-        stimIndex{1,g} = uniqueIndex(g);
-        stimIndex{2,g} = FEMdata(uniqueIndex(g)).ImageName;
-        stimIndex{3,g} = mean(psthMatrix(indexHolder{2,1}(stimPlacer),:),1);
-%         forIgor(g,:) = mean(psthMatrix(indexHolder{2,e}(stimPlacer),:),1); %e for center/full/surround Note: it just happens to fall in this order -- not automated
+%         stimIndex{1,g} = uniqueIndex(g);
+%         stimIndex{2,g} = FEMdata(uniqueIndex(g)).ImageName;
+%         stimIndex{3,g} = mean(psthMatrix(indexHolder{2,1}(stimPlacer),:),1);
+        forIgor(g,:) = mean(psthMatrix(indexHolder{2,e}(stimPlacer),:),1); %e for center/full/surround Note: it just happens to fall in this order -- not automated
 %         size(forIgor)
     end
-    saveName = strcat('E:\Data Analysis_2020\2020_0519\',params.saveFile,cellType,labels(e),".mat");
+    saveName = strcat('E:\Data Analysis_2020\weeklymeeting_529\',params.saveFile,cellType,labels(e),".mat");
     
 %      save(saveName,'forIgor')
     
 end
-save(saveName,'stimIndex')
+% save(saveName,'stimIndex')
 
 
 

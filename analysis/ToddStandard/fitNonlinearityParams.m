@@ -9,3 +9,5 @@ opts.MaxIter = 1e5;
 
 % params = nlinfit(xBin,yBin,@models.ln.outputNonlinearity,[max(yBin)*3 0.2 -1.5 min(yBin)],opts,'Weights',W);
 params = nlinfit(xBin,yBin,@outputNonlinearity,[max(yBin)*3 0.2 -1.5 min(yBin)],opts);
+
+end
