@@ -5,7 +5,8 @@
 %aggregation with change to search for protocol in filename.  filename
 %probably should contain protocol and celltype along with date & cell num
 %% setup
-exportFolder = '/Users/toddappleby/Documents/Data/Clarinet Exports/'
+% exportFolder = '/Users/toddappleby/Documents/Data/Clarinet Exports/'
+exportFolder = '/Users/reals/Documents/PhD 2021/ClarinetExports/'
 cd(exportFolder)
 dataDir = dir;
 %figure out which folders start with 2! (data folders), then create array of
@@ -13,7 +14,7 @@ dataDir = dir;
 folderSet = char(string({dataDir.name}));
 folderIndex = folderSet(:,1:9,folderSet(:,1,:) == '2');% logical index in 3rd dim, 1:9 deletes spaces that formed for some reason at end of folder name after converting to char array
 
-protocolToFind = "Object Motion Dots";
+protocolToFind = "Doves Movie";
 
 
 %%
@@ -42,23 +43,23 @@ for f = 1:size(folderIndex,3)
             end
         end
 end
-cd('/Users/toddappleby/Documents/Data/Clarinet Exports/')
+cd(exportFolder)
 mkdir(protocolToFind)
-cd(strcat('/Users/toddappleby/Documents/Data/Clarinet Exports/',protocolToFind))
+cd(strcat('/Users/reals/Documents/PhD 2021/ClarinetExports/',protocolToFind))
 save(strtrim(protocolToFind),'cellList')
 %% and now we parse spikes 
-protocolToOpen = 'ObjectMotionDots';
+protocolToOpen = 'Doves Movie';
 cd(strcat(exportFolder,protocolToOpen))
 load(strcat(protocolToOpen,'.mat'));
 recordingType = 'extracellular';
-splitFactors = [];
-saveLabel = 'MN';
+splitFactors = ["maskDiameter","apertureDiameter","stimulusIndex"];
+saveLabel = 'Doves';
 cellList=cellList';
 
 
 %% ok, NOW we parse spikes
 
-    for b = 147:length(cellList)
+    for b = 99:length(cellList)
     cellName = char(cellList(b));
     
     %date (year/month/day) by naming convention 
@@ -66,7 +67,7 @@ cellList=cellList';
     cellDate = cellName(5:8);
     load(strcat(exportFolder,cellYear,'_',cellDate,'/',cellName))
     
-    [splitCell,indexHolder,spikingData,metaData] = makeData(epochs,protocolToOpen,splitFactors,6,recordingType);
+    [splitCell,indexHolder,spikingData,~,metaData,~] = makeData(epochs,[],protocolToOpen,splitFactors,3,recordingType);
     
 save(strcat(cellName(1:11),'_','MN'),'splitCell','indexHolder','spikingData','metaData')
 % save(strcat(cellName(1:11),'_','MCS'),'splitCell','indexHolder','metaData','-append') %index fix haha oops (no spikes)
