@@ -1,7 +1,10 @@
 % load data -- #2
- cd('E:\Data Analysis_2020\2020_0611\')
- fileName = '20200611Bc1.mat';
- saveFile = "20200611Bc1_CenterSurround";
+%  cd('E:\Data Analysis_2020\2020_0611\')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1022')
+%  fileName = '20191022Bc2.mat';
+% saveFile = "20191022Bc2_doves";
+ fileName = '20221219Ac1.mat';
+saveFile = "20221219Ac1_doves";
  load(fileName)
 
 uniqueProtocols = [];
@@ -31,7 +34,7 @@ uniqueProtocols = sort(uniqueProtocols) %#ok<NOPTS>
 dataType = 1; %0 if currents
 nameCurrent = "Whole cell_exc"; % either Whole cell_exc or Whole cell_inh
 splitFactors = ["maskDiameter","apertureDiameter","stimulusIndex"];
-desiredSTD = 10;
+desiredSTD = 6;
 splitCell = cell(2,length(splitFactors));
 
 for g = 1:length(splitCell)
@@ -40,6 +43,9 @@ end
 
 count = 0;
 clear epochStorage 
+
+controlOrAlt = 'Control';
+
 
 if dataType == 1
     subjectName = {};
@@ -50,7 +56,7 @@ for i = 1:length(epochs)
    egLabel = epochs(i).meta.epochGroupLabel;
    recording = epochs(i).meta.recordingTechnique;
    
-    if strcmp(displayName,'Doves Movie')
+    if strcmp(displayName,'Doves Movie') && strcmp(egLabel,controlOrAlt)
 %        oAnalysis = epochs(i).meta.onlineAnalysis;
        leakC = epochs(i).epoch(1); 
        if 50>leakC && leakC>-50
@@ -236,29 +242,31 @@ spotIntensityPlace = find(strcmp(analysisSplitters,"spotIntensity")==1);
     
     uniqueIndex = unique(splitCell{2,size(splitCell,2)});
     stimIndex = {};
-    load('E:\Data Analysis_2020\code\Manookin Repository\manookin-package\resources\dovesFEMstims20160826.mat')
+%     load('E:\Data Analysis_2020\code\Manookin Repository\manookin-package\resources\dovesFEMstims20160826.mat')
+     load('C:\Users\reals\Documents\manookin-package\resources\doves\dovesFEMstims20160826.mat')
 labels = ["center","fullfield","surround"];
-cellType = "offParasol_";
+cellType = "RBS_";
 
-for e = 1:length(indexHolder)
+% for e = 1:length(indexHolder)
+for e = 1:3
  
     for g = 1:length(uniqueIndex)
         
         picIndex = find(splitCell{2,size(splitCell,2)}==uniqueIndex(g));
 
         stimPlacer = ismember(indexHolder{2,1},picIndex); % not sure how to automate this part, hopefully remains the same each time (to get full field image only);
-%         stimIndex{1,g} = uniqueIndex(g);
-%         stimIndex{2,g} = FEMdata(uniqueIndex(g)).ImageName;
-%         stimIndex{3,g} = mean(psthMatrix(indexHolder{2,1}(stimPlacer),:),1);
-        forIgor(g,:) = mean(psthMatrix(indexHolder{2,e}(stimPlacer),:),1); %e for center/full/surround Note: it just happens to fall in this order -- not automated
+        stimIndex{1,g} = uniqueIndex(g);
+        stimIndex{2,g} = FEMdata(uniqueIndex(g)).ImageName;
+        stimIndex{3,g} = mean(psthMatrix(indexHolder{2,1}(stimPlacer),:),1);
+%         forIgor(g,:) = mean(psthMatrix(indexHolder{2,e}(stimPlacer),:),1); %e for center/full/surround Note: it just happens to fall in this order -- not automated
 %         size(forIgor)
     end
-    saveName = strcat('E:\Data Analysis_2020\weeklymeeting_529\',params.saveFile,cellType,labels(e),".mat");
-    
+    saveName = strcat('C:\Users\reals\Documents\PhD 2021\ClarinetExports\',params.saveFile,cellType,labels(e),".mat");
+%       saveName = strcat('E:\Data Analysis_2020\weeklymeeting_529\',params.saveFile,cellType,labels(e),".mat");
 %      save(saveName,'forIgor')
     
 end
-% save(saveName,'stimIndex')
+save(saveName,'stimIndex')
 
 
 

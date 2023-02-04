@@ -6,10 +6,10 @@ typesFolder = strcat(exportFolder,protocolToAnalyze,'/','celltypes/');
 
 cd(typesFolder)
 dataDir = dir;
-%figure out which folders start with 2! (data folders), then create array of
-%folder names
+%celltypes must only contain type folders,  
+%create array of folder names
 folderSet = char(string({dataDir.name}));
-folderSet(:,:,1:2)=[]; %removes macOS hidden stuff
+folderSet(:,:,1:2)=[]; %removes hidden stuff
 %%
  timings = [1250,6000,500]; %same for these
  sampleRate = 10000;
@@ -17,25 +17,20 @@ folderSet(:,:,1:2)=[]; %removes macOS hidden stuff
 stimStart = (timings(1)*1e-3)*sampleRate+1;
 stimEnd = (timings(1) + timings(2))*1e-3*sampleRate;
 stimOff = (timings(1)+timings(2)+timings(3))*10;
- nonlinearityBins = 100;
+
 kmeansGroups=[];
 cellnameList = [];
 errorGroups = [];
 recordingType = 'extracellular';
 binRate = 1e3;
-yCrossCells=[];
 holdName=[];
-f1collection=[];
-cellF1F2=[];
-cellF1=[];
-cellF2=[];
 imageMeanAcrossCells=[];
-pickParams = ["0" "2000" "50"];
+pickParams = ["0" "2000" "30"];
 sumsort = [];
+holdFile=[];
 
 
-
-% size(folderSet,3)
+% size(folderSet,3) 
 for c = 1:size(folderSet,3)
     
     cd(strcat(typesFolder,folderSet(:,:,c)))
@@ -70,7 +65,8 @@ holdY=[];
        indicesWanted = indexHolder{2,sumsort==3};
         
        for p = 1:length(indicesWanted)
-           psthImage(p,:) = psth(spikingData(indicesWanted(p),:),10,sampleRate,1);
+           psthImage(p,:) = binSpikeCount(spikingData(indicesWanted(p),:),60,sampleRate);
+%            psthImage(p,:) = psth(spikingData(indicesWanted(p),:),10,sampleRate,1);
        end
       
        averageForImage = mean(psthImage,1);
@@ -78,47 +74,67 @@ holdY=[];
        
        if isnan(averageForImage)
             continue
-        end
+       end
+        
        
        imageMeanAcrossCells = [imageMeanAcrossCells; averageForImage]; 
 
         
         holdName= [string(holdName); string(cellType)];
-
-            
-            
-     
-
-          
-   
-  
+        holdFile = [string(holdFile); string(fileIndex(:,1:11,d))];
         end
-        
-        
-       
-        
-        
-        
-        
 end
 % 
  cd(typesFolder)
  cd ..
 
+
 % tester = imageMeanAcrossCells(strcmp(holdName,"Broad Thorny"),:);
 
-save(strcat("dovesmovie_",pickParams(3)),'imageMeanAcrossCells')
-
-%%
+% save(strcat("dovesmovie_",pickParams(3)),'imageMeanAcrossCells')
+%% SVD by cell type
+nameList = unique(holdName);
+svdApprox = [];
+for eachType = 1:size(unique(holdName),1)
+    typeDataSVD = imageMeanAcrossCells(strcmp(holdName,nameList(eachType)),:);
+    coMatrix = typeDataSVD' * typeDataSVD;
+    [U,S,V] = svd(coMatrix);
+    rank = 2;
+    recreate = U(:,rank)*S(rank,rank)*V(:,rank)';
+    
+    svdApprox = [svdApprox; typeDataSVD*recreate;]; %#ok<AGROW>
+    
+end
+%% eig it
+nameList = unique(holdName);
+eigApprox = [];
+for eachType = 1:size(unique(holdName),1)
+    
+    typeDataSVD = imageMeanAcrossCells(strcmp(holdName,nameList(eachType)),:);
+    [m,n]=size(typeDataSVD); 
+    mn=mean(typeDataSVD,2);
+%     typeDataSVD=typeDataSVD-repmat(mn,1,n);
+%     coMatrix =(1/(n-1))*typeDataSVD' * typeDataSVD;
+coMatrix =typeDataSVD' * typeDataSVD;
+    [V,D] = eig(coMatrix);
+    lambda=diag(D); 
+    [sortthing,m_arrange]=sort(-1*lambda);  %eigenvalues come out backwards 
+    V=V(:,m_arrange);  
+    tester=V'*coMatrix;
+    
+    eigApprox = [eigApprox; tester(1,:).*typeDataSVD;]; %#ok<AGROW>
+    
+end
+%% lol
+imageMeanAcrossCells(92,:)=r(1,:)
+holdName(92)="RecursiveMike"
+%% tsne
 % 
-load('/Users/reals/Documents/PhD 2021/ClarinetExports/Doves Movie/colors.mat')
-figure
-% tsneF1F2=tsne(cellF1F2);
-% cellF1(isnan(cellF1))=0;
+ load('/Users/reals/Documents/PhD 2021/ClarinetExports/Doves Movie/colors.mat')
+
 clear tsne1
 tsne1=tsne(imageMeanAcrossCells);
-% tsne1 = tsne(holder);
-% tsneF2=tsne(cellF2);
+
 
 
 
@@ -128,18 +144,21 @@ figure
 gscatter(tsne1(:,1),tsne1(:,2),holdName,colors)
 figure
 gscatter(tsne1(strcmp(holdName,'ON Parasol'),1),tsne1(strcmp(holdName,'ON Parasol'),2),holdName(strcmp(holdName,'ON Parasol')),colors2)
-% figure
-% gscatter(tsneF1(~strcmp(holdName,'Unknown'),1),tsneF1(~strcmp(holdName,'Unknown'),2),holdName(~strcmp(holdName,'Unknown')),tester)
-% figure
-% gscatter(tsneF2(~strcmp(holdName,'Unknown'),1),tsneF2(~strcmp(holdName,'Unknown'),2),holdName(~strcmp(holdName,'Unknown')),tester)
-% figure
-% gscatter(tsneF1F2(:,1),tsneF1F2(:,2),holdName,tester)
-% figure
-% gscatter(tsneF1(:,1),tsneF1(:,2),holdName,tester)
-% figure
-% gscatter(tsneF2(:,1),tsneF2(:,2),holdName,tester)
+%% look at responses to single cell type
+typeWanted = "OFF Parasol";
+typeData = imageMeanAcrossCells(strcmp(holdName,typeWanted),:);
 
-
+% typeWanted2 = "OFF Parasol";
+% typeData2 = imageMeanAcrossCells(strcmp(holdName,typeWanted2),:);
+figure
+for cellNum = 1:size(typeData,1)
+    subplot(size(typeData,1),1,cellNum)
+  
+    plot(typeData(cellNum,:))
+%     hold on
+%     plot(typeData2(cellNum+2,:))
+end
+% legend(typeWanted,typeWanted2)
 %% Kmeans sort
 celltoAnalyze = ["OFFParasol","OFFSmooth"];
 

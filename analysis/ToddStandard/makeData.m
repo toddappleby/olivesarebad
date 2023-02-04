@@ -1,4 +1,4 @@
-function [splitCell,indexHolder,spikeMatrix,frameTimings,meta,seed] = makeData(epochs,frameTs,protocolID,splitFactors,desiredSTD,recording)
+function [splitCell,indexHolder,spikeMatrix,frameTimings,meta,seed] = makeData(epochs,frameTs,protocolID,splitFactors,desiredSTD,recording,newDataFlag)
 %%%%setup
 if strcmp(recording,'extracellular')
     dataType = 1; 
@@ -44,7 +44,7 @@ egCompare = 'motion and noise';
      else
 egCompare = 'Control';
    end
-
+% egCompare = 'AltCenter';
 if strcmp(displayName,protocolID) && strcmp(egLabel,egCompare) && ~strcmp(recordingTechnique,'whole-cell')
         for s = 1:length(splitFactors)
    
@@ -55,16 +55,24 @@ if strcmp(displayName,protocolID) && strcmp(egLabel,egCompare) && ~strcmp(record
                      splitCell{2,s}=[splitCell{2,s} "1"];
                  end
             else
-                splitCell{2,s}=[splitCell{2,s} string(getfield(epochs(i).meta,splitFactors(s)))];
+                if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
+                      stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
+                  elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'char')
+                      stringedEntry = convertCharsToStrings(getfield(epochs(i).meta,splitFactors(s)));
+                end
+                  splitCell{2,s}=[splitCell{2,s} stringedEntry];
+%                 splitCell{2,s}=[splitCell{2,s} string(getfield(epochs(i).meta,splitFactors(s)))];
             end
-            
+             
         
         end
         
         
        
         count = count + 1;
-seed(count) = epochs(i).meta.seed;
+        if strcmp(protocolID,'Motion And Noise')
+        seed(count) = epochs(i).meta.seed;
+        end
         epochStorage(count,1:length(epochs(i).epoch)) = epochs(i).epoch;
         preTime = epochs(i).meta.preTime;
         stimTime = epochs(i).meta.stimTime;
@@ -153,17 +161,18 @@ for f = 1:length(frameTs)
     
      
    
-   if strcmp(displayName,'Motion And Noise')
+   if strcmp(displayName,protocolID)
        
     count = count+1;
     singleMonitorRun = frameTs(f).epoch;
  frameTimings(count,:) = singleMonitorRun;
+
 %  epochStartTime(count,:) = frameTimings(f).meta.epochStartTime;
 %  epochNumFrames(count) = frameTimings(f).meta.epochNum;
    end
 end
 
-if dataType==1
+if dataType==1 && newDataFlag==1
     %%% spike detection
 for k = 1:size(epochStorage,1)
     
@@ -177,7 +186,7 @@ for k = 1:size(epochStorage,1)
           end
 end
 
-else    
+elseif dataType == 0 %here so data flag = 0 doesn't jump to current collection    
 
     for k = 1:size(epochStorage,1)
         spikeMatrix(k, :) = epochStorage(k, :) - mean(epochStorage(k, 1:1000));
@@ -185,6 +194,11 @@ else
     end
     
 end
+
+if ~strcmp(protocolID,'Motion And Noise')
+seed =[];
+end
+
 end
 
 

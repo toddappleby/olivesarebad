@@ -1396,7 +1396,7 @@ splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 %processing function
 subtractBGrate=0;
 
-desiredSTD =5;
+desiredSTD =1.5;
 
 splitCell = cell(2,length(splitFactors));
 
@@ -1404,8 +1404,8 @@ for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
 end
 
-% controlOrAlt = "Control";
-controlOrAlt = "NDF 4";  
+controlOrAlt = "Control";
+% controlOrAlt = "NDF 4";  
 % controlOrAlt =  "AltCenter";
 
 % egLabelforWholeCell = "Wholecell_exc";

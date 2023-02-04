@@ -12,6 +12,7 @@ samplePts = floor((preTime + stimTime + tailTime) * 1e-3 * binRate);
 
 frameSeq = zeros(length(seedList), samplePts);
 for k = 1 : length(seedList)
+    
     noiseContrast = noiseVars.contrast;
     noiseClass = noiseVars.type;
     seed = seedList(k);
@@ -21,8 +22,10 @@ for k = 1 : length(seedList)
     
     % Reconstruct the frame sequence.
     fTimes = frameTimes{k};
+   
     firstFrame = find(fTimes > prePts,1) - frameShift;
     lastFrame = find(fTimes > prePts+stimPts,1);
+    
     fTimes = fTimes(firstFrame : lastFrame);
     numFrames = length(fTimes);
     

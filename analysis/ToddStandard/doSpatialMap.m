@@ -11,10 +11,13 @@ preFrames = timings(1)*1e-3*60;
 frameTimes = round(cumsum([1 binRate/60*ones(1,preFrames*2+numFrames)]));
 frameTimes(frameTimes > size(r,2)) = [];
 
-ft = zeros(numYChecks, numXChecks, numFrames*binsPerFrame+50);
+% ft = zeros(numYChecks, numXChecks, numFrames*binsPerFrame+50);
+ft = zeros(numYChecks, numXChecks, numFrames*binsPerFrame);
 for m = 1 : length(seeds)
     
     frameValues = getSpatialNoiseFrames(numXChecks, numYChecks, numFrames, 'binary', 'achromatic', seeds(m));
+%     frameValues = getJitteredNoiseFrames(24, 24, 46, 46, numFrames, 2, seeds(m));
+%     [fv1,frameValues,~,fv2] = getFastNoiseFrames(26,17, 50, 32, 'BY', numFrames, 2, seeds(m));
     
     if binsPerFrame > 1
         frameValues = upsampleFrames(frameValues,binsPerFrame);
@@ -34,9 +37,10 @@ for m = 1 : length(seeds)
     % Do reverse correlation.
     bdata = bdata - median(bdata(60*binsPerFrame+1:end));
     bdata(1:60*binsPerFrame) = 0;
+
     for n = 1 : size(frameValues,2)
         for p = 1 : size(frameValues,3)
-            ft(n,p,:) = squeeze(ft(n,p,:)) + fft([zeros(25,1);bdata(:);zeros(25,1)]) ...
+               ft(n,p,:) = squeeze(ft(n,p,:)) + fft([zeros(25,1);bdata(:);zeros(25,1)]) ...
                 .* conj(fft([zeros(25,1);squeeze(frameValues(:,n,p));zeros(25,1)]));
         end
     end

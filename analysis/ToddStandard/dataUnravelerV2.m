@@ -4,8 +4,8 @@ MNONParasol = struct();
 MNONSmooth = struct();
 MNOFFSmooth = struct();
 
-% MCS -- need something in case no cell
 
+% MCS -- need something in case no cell
 CMSOFFParasol = [];
 CMSONParasol = [];
 CMSONSmooth = [];
@@ -27,33 +27,67 @@ cellType = 'ON Parasol';
 saveFlag = 0;
 lastRun = 0;
 expNum= 11;
-cellName = 'Bc8';
+cellName = 'Ac1';
 
-% load FT first, give different name --- #1
+% % load FT first, give different name --- #1
 % cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_0630')
 % %smooth
 % cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2021_0128') %parasol
 % cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_0713')%BT?
-cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2020_1217')
+% cd('/Users/toddappleby/Documents/Data/Clarinet Exports/2021_0225')
 % cd('E:\Data Analysis_2020\2020_0519')
 
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1010')
 
-% load('20200630Ac1_FT.mat')
-load('20201217Ac2_FT.mat')
-% load('20190927Bc1_FT.mat')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2020_0504')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_0128')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_0507')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_0812')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2020_0206')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_0427')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2020_0713')
+cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2020_0630')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_0910')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_0907')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2021_1102')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2020_0930')
+% cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2020_0713')
+
+% load('20200713Bc2_FT.mat')
+% load('20200504Bc1_FT.mat')
+% load('20210427Ac1_FT.mat')
+% load('20201118Bc3_FT.mat')
+% load('20210507Bc4_FT.mat')
 % load('20200923Bc2_FT.mat')
+% load('20210507Bc4_FT.mat')
+% load('20210122Ac7_FT.mat')
+load('20200630Ac1_FT.mat')
+% load('20210910Fc1_FT.mat')
+% load('20210907Ac2_FT.mat')
 % load('20210128Bc2_FT.mat')
 % load('20200713Bc3_FT.mat')
+% load('20200930Bc2_FT.mat')
+% load('20211102Ac2_FT.mat')
+% load('20191126Bc2_FT.mat')
 frameTimings = epochs;
 expDate = dir;
 % now load data -- #2+
-
-% load('20200630Ac1.mat')
-load('20201217Ac2.mat')
-% load('20190927Bc1.mat')
+% load('20200713Bc2.mat')
+% load('20200504Bc1.mat')
+% % load('20201118Bc3.mat')
+% load('20210910Fc1.mat')
 % load('20200923Bc2.mat')
-% load('20210128Bc2.mat')
+% load('20210907Ac2.mat')
 % load('20200713Bc3.mat')
+load('20200630Ac1.mat')
+% load('20210128Bc2.mat')
+% load('20200825Ac3.mat')
+% % load('20210122Ac7.mat')
+% load('20200930Bc2.mat')
+% load('20211102Ac2.mat')
+% load('20191126Bc2.mat')
+% load('20210128Bc2.mat')
+% load('20210427Ac1.mat')
 uniqueProtocols = [];
 
 for z = 1:size(epochs,2)
@@ -61,7 +95,7 @@ for z = 1:size(epochs,2)
 %    allEpochData(z,1:length(epochs(z).epoch)) = epochs(z).epoch;
 end
 %find 0s, make index, create new string
-tic
+
 while ~isempty(list)
 uniqueProtocols = [uniqueProtocols; list(1)];%OK<AGROW>
 uniqueCheck = strcmp(uniqueProtocols(length(uniqueProtocols)),list);
@@ -74,7 +108,7 @@ rawData{length(uniqueProtocols),1} = uniqueProtocols(length(uniqueProtocols));
 % rawData{length(uniqueProtocols),2} = protocolData;
 % allEpochData = allEpochData(newIndex,:);
 end
-toc
+
 uniqueProtocols = sort(uniqueProtocols) %#ok<NOPTS>
 
 
@@ -107,7 +141,7 @@ monitorStorage = monitorStorage(DI,:);
 dataType=1;
 excorinh = 'Whole cell_exc';
  count = 0;
- desiredSTD =7 ; 
+ desiredSTD =5; 
 clear binnedStorage
 clear epochStorage
 clear epochStartTimeD
@@ -117,7 +151,8 @@ for i = 1:length(epochs)
    displayName = epochs(i).meta.displayName;
    egLabel = epochs(i).meta.epochGroupLabel;
   if dataType == 1
-      dTypeLabel = 'Control';
+%       dTypeLabel = 'Control';
+      dTypeLabel = 'motion and noise';
   else
       dTypeLabel = excorinh;
   end
@@ -205,7 +240,7 @@ for k = 1:size(binnedStorage,1)
         spikes = binSpikeCount(spikes, binRate, sampleRate);
         spikes = spikes';
         spikeMatrix(k,:) = spikes;
-        psthMatrix(k,:) = psth(spikeMatrix(k,:)*binRate,6+2/3,binRate,1);
+        psthMatrix(k,:) = psth(spikeMatrix(k,:)*binRate,20,binRate,1);
 %         
 %         spikeMatrix(k,:) = binSpikeCount(spikes/sampleRate, binRate, sampleRate);
 %         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
@@ -241,6 +276,7 @@ end
 % [datesD,DI2] = sort(datetime(epochStartTimeD)); % use this for nori package sorting 
 spikeMatrix = spikeMatrix(DI2,:);
 
+
 spikeMatrixUnbinned = spikeMatrixUnbinned(DI2,:);
 % epochNumResponses = epochNumResponses(DI2);
 psthMatrix = psthMatrix(DI2,:);
@@ -269,7 +305,201 @@ gaussianIndex = contains(noiseClass,'gaussian');
 %  barFrameDwell = barFrameDwell';
 %  frameDwell = frameDwell';
 %  seedList = seedList';
+%% psth split\
 
+
+
+% motionPSTH = psthMatrix(bgClass(gaussianIndex)==1,:);
+% randomPSTH = psthMatrix(bgClass(gaussianIndex)==2,:);
+% staticPSTH = psthMatrix(bgClass(gaussianIndex)==3,:);
+
+motionPSTH = psthMatrix(bgClass(binaryIndex)==1,:);
+randomPSTH = psthMatrix(bgClass(binaryIndex)==2,:);
+staticPSTH = psthMatrix(bgClass(binaryIndex)==3,:);
+
+% motionPSTH = psthMatrix(bgClass(barOrientation==330)==1,:);
+% randomPSTH = psthMatrix(bgClass(barOrientation==330)==2,:);
+% staticPSTH = psthMatrix(bgClass(barOrientation==330)==3,:);
+
+
+% motionPSTH = psthMatrix(bgClass(binaryIndex==false)==1,:);
+% randomPSTH = psthMatrix(bgClass(binaryIndex==false)==2,:);
+% staticPSTH = psthMatrix(bgClass(binaryIndex==false)==3,:);
+
+
+%repeated seed
+% motionPSTH = psthMatrix(bgClass(seedList<=1)==1,:);
+% randomPSTH = psthMatrix(bgClass(seedList<=1)==2,:);
+% staticPSTH = psthMatrix(bgClass(seedList<=1)==3,:);
+
+
+
+motionPSTH = mean(motionPSTH)';
+randomPSTH = mean(randomPSTH)';
+staticPSTH = mean(staticPSTH)';
+
+msecX = linspace(0,10,10500);
+plot(msecX,motionPSTH,'r','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 10 0 80])
+% makeAxisStruct(gca,'seqPSTHSmooth')
+figure
+plot(msecX,randomPSTH,'b','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 10 0 80])
+% makeAxisStruct(gca,'randPSTHSmooth')
+figure
+plot(msecX,staticPSTH,'k','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 10 0 80])
+% makeAxisStruct(gca,'staticPSTHSmooth')
+
+figure
+plot(msecX,motionPSTH,'r','LineWidth',2)
+hold on
+plot(msecX,randomPSTH,'b','LineWidth',2)
+plot(msecX,staticPSTH,'k','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 10 0 80])
+
+
+
+
+figure
+plot(msecX,motionPSTH,'r','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([5 10 0 80])
+line([5 10], [mean(motionPSTH(5000:end,1)) mean(motionPSTH(5000:end,1))])
+makeAxisStruct(gca,'seqPSTHBTzoomed')
+figure
+plot(msecX,randomPSTH,'b','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([5 10 0 80])
+line([5 10], [mean(randomPSTH(5000:end,1)) mean(randomPSTH(5000:end,1))])
+makeAxisStruct(gca,'randPSTHBTzoomed')
+figure
+plot(msecX,staticPSTH,'k','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([5 10 0 80])
+line([5 10], [mean(staticPSTH(5000:end,1)) mean(staticPSTH(5000:end,1))])
+makeAxisStruct(gca,'staticPSTHBTzoomed')
+
+figure
+plot(msecX,motionPSTH,'r','LineWidth',2)
+hold on
+plot(msecX,randomPSTH,'b','LineWidth',2)
+plot(msecX,staticPSTH,'k','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 5 0 80])
+
+title('all 3')
+% save('psth3.mat','motionPSTH','randomPSTH','staticPSTH')
+
+figure
+plot(msecX,motionPSTH,'r','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 5 0 80])
+line([0 5], [mean(motionPSTH(1:5000,1)) mean(motionPSTH(1:5000,1))])
+makeAxisStruct(gca,'seqPSTHBTzoomedEARLY')
+figure
+plot(msecX,randomPSTH,'b','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 5 0 80])
+line([0 5], [mean(randomPSTH(1:5000,1)) mean(randomPSTH(1:5000,1))])
+makeAxisStruct(gca,'randPSTHBTzoomedEARLY')
+figure
+plot(msecX,staticPSTH,'k','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 5 0 80])
+line([0 5], [mean(staticPSTH(1:5000,1)) mean(staticPSTH(1:5000,1))])
+makeAxisStruct(gca,'staticPSTHBTzoomedEARLY')
+
+figure
+plot(msecX,motionPSTH,'r','LineWidth',2)
+hold on
+plot(msecX,randomPSTH,'b','LineWidth',2)
+plot(msecX,staticPSTH,'k','LineWidth',2)
+xlabel('Time (s)','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+axis([0 5 0 80])
+title('all 3')
+
+
+
+
+%%
+
+motionEpoch = epochStorage(bgClass(seedList<=1)==1,:);
+randomEpoch = epochStorage(bgClass(seedList<=1)==2,:);
+staticEpoch = epochStorage(bgClass(seedList<=1)==3,:);
+
+figure
+msecX2 = linspace(1,10500,105000);
+plot(msecX2,motionEpoch(1,:),'r','LineWidth',2)
+xlabel('Time (ms)','FontSize',24)
+% ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'visible','off')
+set(gca,'FontSize',20)
+makeAxisStruct(gca,'seqSpikesSmooth')
+figure
+msecX2 = linspace(1,10500,105000);
+plot(msecX2,randomEpoch(1,:),'b','LineWidth',2)
+xlabel('Time (ms)','FontSize',24)
+% ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'visible','off')
+set(gca,'FontSize',20)
+makeAxisStruct(gca,'randSpikesSmooth')
+figure
+msecX2 = linspace(1,10500,105000);
+plot(msecX2,staticEpoch(1,:),'k','LineWidth',2)
+xlabel('Time (ms)','FontSize',24)
+% ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'visible','off')
+set(gca,'FontSize',20)
+makeAxisStruct(gca,'staticSpikesSmooth')
+%% excel workaround
+
+xlswrite('psthData.xls',motionPSTH,'A1')
+xlswrite('psthData.xls',randomPSTH,'A2')
+xlswrite('psthData.xls',staticPSTH,'A3')
 %% split by protocol variable...somehow
  %run unique(apRadius) or unique(barWidth)
 %  splitter = 300;
@@ -286,26 +516,29 @@ gaussianIndex = contains(noiseClass,'gaussian');
 % FRAME DWELL (you'll get logical 1s in binaryIndex where it's actually
 % gaussian noise)
 
-splitter2 = 180;
-splitter3 = 1;
-splitter4 = 2;
-
+gaussianOrBinary = 'gaussian';
+% gaussianOrBinary = 'binary';
+splitter2 = 90;
+splitter3 = 350;
+splitter4 = 1;
+noiseSplitter = strcmp(gaussianOrBinary,noiseClass);
 
 splitIndex2 = barOrientation == splitter2;
-% splitIndex3 = apRadius == splitter3;
-splitIndex3 = frameDwell == splitter3;
-splitIndex4 = barFrameDwell == splitter4;
+splitIndex3 = apRadius == splitter3;
+% splitIndex3 = frameDwell == splitter3;
+% splitIndex4 = barFrameDwell == splitter4;
+splitIndex4 = seedList ~= splitter4;
 
-dumbSplit = splitIndex2./splitIndex3./splitIndex4;
+dumbSplit = splitIndex2./splitIndex3./splitIndex4./noiseSplitter;
 dumbSplit = dumbSplit==1;
 
 % splitIndex3 = barWidth == splitter3;
 % splitIndex4 = barFrameDwell == splitter4;bar
-% splitIndex = splitIndex2 == splitIndex3(splitIndex3 ==0 ;
+% splitIndex = splitIndex2 == splitIndex3(splitIndex3 ==0 ; 
 % splitIndex = splitIndex == splitIndex4;
 % bgClass = bgClass(splitIndex2>0);
-binaryIndex = dumbSplit==1;  
-% gaussianIndex = dumbSplit ==1;
+% binaryIndex = dumbSplit==1;  
+gaussianIndex = dumbSplit ==1;
 % frameDwell = frameDwell(splitIndex2);
 
 %% fake logicals
@@ -317,6 +550,50 @@ hold on
 plot(mean(lfRespRandom),'Color','b')
 plot(mean(lfRespSeq),'Color','r')
 legend('static','random','sequential')
+%% test only repeated sequence
+
+if noiseFlag == 1 
+noiseVars = struct();
+noiseVars.type = 'gaussian';
+noiseVars.contrast = 0.3333;
+
+timings = [250,10000,250]; % AUTOMATE THIS LATER
+frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(gaussianIndex,:), 10000, binRate);
+% frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
+frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,2,seedList(gaussianIndex),frameDwell(gaussianIndex));
+response1 = psthMatrix(gaussianIndex,:);
+else
+    noiseVars = struct();
+noiseVars.type = 'binary';
+noiseVars.contrast = 0.3333;
+
+timings = [250,10000,250]; % AUTOMATE THIS LATER
+frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(binaryIndex,:), 10000, binRate);
+% frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
+frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,2,seedList(binaryIndex),frameDwell(binaryIndex));
+response1 = psthMatrix(binaryIndex,:);
+end
+
+%      
+     
+ frameValues = frameValuesAll;
+%  findCondition = size(response1,1);
+%  numRuns = findCondition/3;
+%  seqRuns = 1:3:numRuns*3;
+%  randRuns = 2:3:numRuns*3;
+%  staticRuns= 3:3:numRuns*3;
+
+
+% ftest = ifft(fft(response1(3,:)) .* conj(fft(frameValues(1,:))))
+% plot(ftest)
+% 
+% rSeedGenerator = ifft(fft(linearFilterAvg) .* fft(frameValues(3,:)));
+% rSeedY = outputNonlinearity(nlParams,rSeedGenerator);
+% plot(response1(3,:));
+% hold on 
+% plot(rSeedY);
+    
+
  %% Get stim frames -- #5 (standard, using Mike's frame time functions)
 count = 0;
 noiseFlag = 1; %1 for gaussian
@@ -335,7 +612,7 @@ noiseVars.contrast = 0.3333;
 timings = [250,10000,250]; % AUTOMATE THIS LATER
 frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(gaussianIndex,:), 10000, binRate);
 % frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
-frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(gaussianIndex),frameDwell(gaussianIndex));
+frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,2,seedList(gaussianIndex),frameDwell(gaussianIndex));
 else
     noiseVars = struct();
 noiseVars.type = 'binary';
@@ -344,7 +621,7 @@ noiseVars.contrast = 0.3333;
 timings = [250,10000,250]; % AUTOMATE THIS LATER
 frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage(binaryIndex,:), 10000, binRate);
 % frames = manookinlab.ovation.getFrameTimesFromMonitor(monitorStorage, 10000, 10000);
-frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,1,seedList(binaryIndex),frameDwell(binaryIndex));
+frameValuesAll = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,2,seedList(binaryIndex),frameDwell(binaryIndex));
 end
 
 % just use this for gaussian/binary - #6 (keeps 1 seeds for now)
@@ -429,17 +706,17 @@ linearFilterStatic = linearFilterStatic/norm(linearFilterStatic);
 linearFilterAvg = (linearFilterSeq + linearFilterRandom + linearFilterStatic)/3;
 
 %fits for filters using Obsidian functions 
-     seqParams = fitLinearFilterParams(linearFilterSeq,binRate);
+     seqParams = models.ln.fitLinearFilterParams(linearFilterSeq,binRate);
      filterSeq = linearFilterFunction(seqParams,(1:plotLngth)/binRate);
      figure(7)
      plot((1:plotLngth)/binRate, filterSeq,'LineWidth',2,'Color','r')
      hold on
      
-     randomParams = fitLinearFilterParams(linearFilterRandom,binRate);
+     randomParams = models.ln.fitLinearFilterParams(linearFilterRandom,binRate);
      filterRand = linearFilterFunction(randomParams,(1:plotLngth)/binRate);
      plot((1:plotLngth)/binRate, filterRand,'LineWidth',2,'Color','b')
      
-     staticParams = fitLinearFilterParams(linearFilterStatic,binRate);
+     staticParams = models.ln.fitLinearFilterParams(linearFilterStatic,binRate);
      filterStatic = linearFilterFunction(staticParams,(1:plotLngth)/binRate);
      plot((1:plotLngth)/binRate, filterStatic,'LineWidth',2,'Color','k')
      set(gca,'xdir','reverse')
@@ -543,10 +820,7 @@ nonLinXAx2 = linspace(-1,1,100);
 nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
  
-      figure(12)
-      
-      plot(huhx,huhy,'Color','r')
-
+  
 
  figure(8);
  clf
@@ -568,31 +842,23 @@ axis([-1 1 0 max(huhy)+2])
 
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
+ figure(98)
  plot(nlX,outputNonlinearity(nlParams,nlX),'Color','r','LineWidth',2)
  hold on
  nlParamsSeq = nlParams;
- 
+ outY=[];
+ outX=[];
  outY(1,:)=outputNonlinearity(nlParams,nlX);
  outX(1,:)=nlX;
+ 
+ 
+ 
  
  binnedX(:,1) = xfBin;
  binnedY(:,1) = yfBin; 
  
  XforModel(:,1) = nlX;
  
- if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.X = nlX;
-    MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Seq = outputNonlinearity(nlParams,nlX);
- elseif saveFlag ==1 && strcmp(cellType,'ON Parasol')
-    MNONParasol.Exp(expNum).Cell(ONParasolC).NL.X = nlX;
-    MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Seq = outputNonlinearity(nlParams,nlX);
- elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.X = nlX;
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Seq = outputNonlinearity(nlParams,nlX);
- elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.X = nlX;
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Seq = outputNonlinearity(nlParams,nlX);
- end
  
 % random NL 
 
@@ -647,10 +913,7 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
 
 
-      figure(12)
-      hold on
-      plot(huhx,huhy,'Color','b')
- 
+
 
 
  figure(8)
@@ -674,6 +937,7 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
+ figure(98)
  plot(nlX,outputNonlinearity(nlParams,nlX),'Color','b','LineWidth',2)
  outY(2,:)=outputNonlinearity(nlParams,nlX);
  outX(2,:)=nlX;
@@ -684,18 +948,7 @@ nonLinXAx3= linspace(min(huhx),max(huhx),1000);
  binnedY(:,2) = yfBin;
  
  XforModel(:,2) = nlX;
- 
- if saveFlag == 1 && strcmp(cellType,'OFF Parasol')
-   MNOFFParasol.Exp(expNum).Cell(OFFParasolC).NL.Rand = outputNonlinearity(nlParams,nlX);
-   elseif saveFlag ==1 && strcmp(cellType,'ON Parasol')
-   MNONParasol.Exp(expNum).Cell(ONParasolC).NL.Rand = outputNonlinearity(nlParams,nlX);
-   elseif saveFlag ==1 && strcmp(cellType,'ON Smooth')
-   
-    MNONSmooth.Exp(expNum).Cell(ONSmoothC).NL.Rand = outputNonlinearity(nlParams,nlX);
-   elseif saveFlag ==1 && strcmp(cellType,'OFF Smooth')
-    
-    MNOFFSmooth.Exp(expNum).Cell(OFFSmoothC).NL.Rand = outputNonlinearity(nlParams,nlX);
- end
+
 % stationary NL 
 
 xaxis=0;
@@ -744,9 +997,7 @@ g = nlinfit(huhx,huhy,@outputNonlinearity,[max(yBin)*3 0.2 -1.5 min(yBin)],opts)
 nonLinXAx3= linspace(min(huhx),max(huhx),1000);
 
 
-      figure(12)
-      hold on
-      plot(huhx,huhy,'Color','k')
+     
  
 
  
@@ -777,6 +1028,7 @@ set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inch
  nlParams = fitNonlinearityParams(xfBin, yfBin);
  nlX = linspace(-max(abs(xfBin(:))),max(abs(xfBin(:))),1000);
  figure(9)
+ figure(98)
  plot(nlX,outputNonlinearity(nlParams,nlX),'Color','k','LineWidth',2)
   legend('sequential','random','static','location','northwest')
   xlabel('input')
@@ -785,10 +1037,10 @@ set(gcf, 'Units', 'Inches', 'Position', [0, 0, 7.25, 9.125], 'PaperUnits', 'Inch
    outY(3,:)=outputNonlinearity(nlParams,nlX);
  outX(3,:)=nlX;
 %  
-%  outY=outY';
-%  outX=outX';
-%  
-%  save('OffPout','outY','outX')
+ outY=outY';
+ outX=outX';
+ 
+ save('OffPout','outY','outX')
   
    binnedX(:,3) = xfBin;
    binnedY(:,3) = yfBin; 
@@ -820,9 +1072,9 @@ legend('fit seq','fit static','data seq','data static')
 % 
 % R2(binnedY(:,2),outNL(:,2))
 % 
-[rsquaredOut,rootMSE]=rsquare(binnedY(:,1),outNL(:,1))
+% [rsquaredOut,rootMSE]=rsquare(binnedY(:,1),outNL(:,1))
 % 
-[rsquaredOut,rootMSE]=rsquare(binnedY(:,2),outNL(:,2))
+% [rsquaredOut,rootMSE]=rsquare(binnedY(:,2),outNL(:,2))
 
 MSE1 = immse(binnedY(:,1),outNL(:,1))
 MSE2 = immse(binnedY(:,2),outNL(:,2))
@@ -868,9 +1120,9 @@ legend('fit seq','fit static','data seq','data static')
 
 % R2(binnedY(:,2),outNL(:,2))
 
-[rsquaredOut,rootMSE]=rsquare(binnedY(:,1),outNL(:,1))
+% [rsquaredOut,rootMSE]=rsquare(binnedY(:,1),outNL(:,1))
 
-[rsquaredOut,rootMSE]=rsquare(binnedY(:,2),outNL(:,2))
+% [rsquaredOut,rootMSE]=rsquare(binnedY(:,2),outNL(:,2))
 
 MSE1 = immse(binnedY(:,1),outNL(:,1))
 MSE2 = immse(binnedY(:,2),outNL(:,2))
@@ -898,6 +1150,27 @@ MSE2 = immse(binnedY(:,2),outNL(:,2))
 % plot(xBin,yBin,'.');
 % plot(x,nlfun(p,x));
 % hold off;
+figure(98)
+plot(binnedX(:,1),binnedY(:,1),'.','Color','r')
+hold on
+plot(binnedX(:,2),binnedY(:,2),'.','Color','b')
+plot(binnedX(:,3),binnedY(:,3),'.','Color','k')
+% title('binned NLs')
+legend('Motion','Random','Static','location','NorthWest')
+xlabel('Input','FontSize',24)
+ylabel('Spike Rate (Hz)','FontSize',24)
+set(gca,'box','off') 
+set(gca,'FontSize',20)
+
+
+
+figure(99)
+plot(binnedX(:,1),binnedY(:,1),'Color','r')
+hold on
+plot(binnedX(:,2),binnedY(:,2),'Color','b')
+plot(binnedX(:,3),binnedY(:,3),'Color','k')
+title('binned NLs')
+legend('Motion','Random','Static','location','NorthWest')
 
 %% final save
 cd('/Users/toddappleby/Documents/Data/Clarinet Exports/SavedData')
