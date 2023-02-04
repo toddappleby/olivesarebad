@@ -29,7 +29,7 @@ sender(s).params.stimStart = (timings(1)*1e-3)*sampleRate+1;
 sender(s).params.stimEnd = (timings(1) + timings(2))*1e-3*sampleRate;
 sender(s).params.sampleRate = sampleRate;
 end
-result = sMTFAnalysis(sender,1e4,'spikes','avg');
+result = sMTFAnalysisTodd(sender,1e4,'spikes','avg');
 figure(1)
 subplot(1,2,1)
     plot(result.uniqueSF,result.avgF1);
@@ -54,7 +54,8 @@ for s = 1:length(uniqueP)
     sender(s).params.stimEnd = (timings(1) + timings(2))*1e-3*sampleRate;
     sender(s).params.sampleRate = sampleRate;
 end
-result = sMTFAnalysis(sender,1e4,'spikes','avg');
+
+result = sMTFAnalysisTodd(sender,1e4,'spikes','avg');
 subplot(1,2,2)
     plot(result.uniqueSF,result.avgF1);
     hold on

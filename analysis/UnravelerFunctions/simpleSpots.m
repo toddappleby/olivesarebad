@@ -1,4 +1,4 @@
-function simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params)
+function [psthData] = simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params)
 
 sampleRate = 10000;
 stimStart = (timings(1)*1e-3)*sampleRate+1;
@@ -56,13 +56,19 @@ end
         plot(uniqueSpotSizes,offResp,'Color','b','LineWidth',2);
         legend('Off Response','On Response')
         xlabel('spot sizes')
+        if params.dataType == 1
         ylabel('spike count')
+        else
+        ylabel('pA')
+        end
         title('Dark Spot')
 %         saveName = strcat('expandingDarkSpot_',params.cellName);
         onRespFlip = offResp';
         offRespFlip = onResp';
         uniqueSpotSizesFlip = uniqueSpotSizes';
         save('expandingDarkSpots.mat','uniqueSpotSizesFlip','onRespFlip','offRespFlip')
+        
+
         
         %dog
 %        size(onResp)
@@ -80,19 +86,44 @@ end
         plot(uniqueSpotSizes,offResp,'Color','r','LineWidth',2);
         legend('On Response','Off Response')
         xlabel('spot sizes')
+        if params.dataType == 1
         ylabel('spike count')
+        else
+        ylabel('pA')
+        end
         
-      
-        
-        title("Light Spot --" + indexHolder{1,a}(2)) %will need to automate later
-       
-%         saveName = strcat('expandingLightSpot_',params.cellName);
-        onRespFlip = onResp';
-        offRespFlip = offResp';
-        uniqueSpotSizesFlip = uniqueSpotSizes';
-        save('expandingLightSpots.mat','uniqueSpotSizesFlip','onRespFlip','offRespFlip')
-        
+
          end
+        
+      figure(2)
+      
+               
+         if indexHolder{1,a}(spotIntensityPlace) <= 0
+        plot(uniqueSpotSizes,onResp,'Color','r','LineWidth',2); hold on
+        plot(uniqueSpotSizes,offResp,'Color','b','LineWidth',2);
+        legend('Off Response','On Response')
+        xlabel('spot sizes')
+        if params.dataType == 1
+        ylabel('spike count')
+        else
+        ylabel('pA')
+        end
+        title('Dark Spot')
+%         saveName = strcat('expandingDarkSpot_',params.cellName);
+        onRespFlip = offResp';
+        offRespFlip = onResp';
+        uniqueSpotSizesFlip = uniqueSpotSizes';
+        save('expandingDarkSpots.mat','uniqueSpotSizesFlip','onRespFlip','offRespFlip')
+        
+   
+        figure
+        plot(uniqueSpotSizes,onResp/max([onResp offResp]),'Color','b','LineWidth',2); hold on
+        plot(uniqueSpotSizes,offResp/max([onResp offResp]),'Color','r','LineWidth',2)
+        
+        makeAxisStruct(gca,strtrim(['OffParaExpandingSpots']))
+         end
+        
+
       
     end
          

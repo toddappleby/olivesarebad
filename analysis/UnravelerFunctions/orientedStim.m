@@ -1,4 +1,4 @@
-function orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params)
+function [psthData] = orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params)
 
 % for z = 1:length(splitCell)-1    
 %     uniqueSplit = unique(splitCell{2,z}); 
@@ -17,31 +17,56 @@ stimOff = (timings(1)+timings(2)+timings(3))*10;
 analysisSplitters = string(splitCell(1,:));
 tFreq= find(strcmp(analysisSplitters,"temporalFrequency")==1);
 figure(10); clf; hold on
+
 if strcmp(params.stimName, 'Grating')
 
     for a = 1:size(indexHolder,2)
-        orientations = splitCell{2,size(splitCell,2)};
+        orientations = str2double(splitCell{2,size(splitCell,2)});
         orientations = orientations((indexHolder{2,a}));
-         [orientations I] = sort(orientations);
+          [orientations I] = sort(orientations);
          sortedIndex = indexHolder{2,a};
-         sortedIndex = sortedIndex(I);
-         
-         
+          sortedIndex = sortedIndex(I);
+      
 
         for u = 1:length(unique(orientations))
-            uniqueOrientations = unique(orientations) %because I don't know how to index the unique function
+            uniqueOrientations = unique(orientations); %because I don't know how to index the unique function
             finalInd = find(orientations==uniqueOrientations(u));
-%             angleIndex = find(orientation == uniqueAngle(u));
-%             masterIndex = intersect(angleIndex,apertureIndex(a,:));
-            data = mean(spikeMatrix(sortedIndex(finalInd),:),1);
-                    binnedData = binData(data(stimStart:stimEnd), 100, sampleRate);
+
+collectIndices = sortedIndex(finalInd);
+            collectF1 = [];
+            collectF2 = [];
+            collectSpikes = [];
+            holder = zeros(1,length(spikeMatrix));
+            for uu = 1:length(sortedIndex(finalInd))
+                holder(spikeMatrix(collectIndices(uu),:)>0)=sampleRate; %mike does this in his online analysis.  magnitude post binning is v small when this not done
+                binnedData = binData(holder(stimStart:stimEnd),100,sampleRate);
                 [F, phase] = frequencyModulation(binnedData, ...
-                100, str2num(indexHolder{1,a}(1,tFreq)), 'avg', 1:2, params.killCycle1);
-                avgF1(u)= F(1);
-                avgF2(u)= F(2);     
-                spikeCount(u) = mean(data(stimStart:stimEnd),2);
+                100, double(indexHolder{1,a}(1,tFreq)), 'avg', 1:2, []);
+                collectF1 = [collectF1; F(1)]; 
                 
-            psthData(u,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
+                  
+                 collectF2 = [collectF2; F(2)];
+                
+                
+                collectSpikes = [collectSpikes; sum(spikeMatrix(collectIndices(uu),stimStart:stimEnd),2);];
+            end
+%
+             
+
+                avgF1(u) = mean(collectF1);
+                avgF2(u) = mean(collectF2);
+                spikeCount(u) = mean(collectSpikes,1);
+
+
+%             data = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+%                     binnedData = BinSpikeRate(data(stimStart:stimEnd), 100, sampleRate);
+%                 [F, phase] = frequencyModulation(binnedData, ...
+%                 100, str2num(indexHolder{1,a}(1,tFreq)), 'avg', 1:2, params.killCycle1);
+%                 avgF1(u)= F(1);
+%                 avgF2(u)= F(2);     
+%                 spikeCount(u) = mean(data(stimStart:stimEnd),2);
+%                 
+             psthData(u,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
            
             figure(15); hold on
             subplot(1,size(indexHolder,2),a)
@@ -50,7 +75,9 @@ if strcmp(params.stimName, 'Grating')
         end
 
         
-        uniqueOrientations = sort(str2double(uniqueOrientations));
+%         uniqueOrientations = sort(str2double(uniqueOrientations));
+          
+        uniqueOrientations = sort(uniqueOrientations);
        
         avgF1(1:length(uniqueOrientations));
     figure(a)
@@ -91,7 +118,7 @@ figure(10);clf;
 onResp =[];
 offResp=[];
 for a = 1:size(indexHolder,2)
-        orientations = splitCell{2,size(splitCell,2)};
+        orientations = str2double(splitCell{2,size(splitCell,2)});
         orientations = orientations((indexHolder{2,a}));
          [orientations I] = sort(orientations);
          sortedIndex = indexHolder{2,a};
@@ -113,46 +140,64 @@ for a = 1:size(indexHolder,2)
                 bgRate = sum(spikeMatrix(sortedIndex(finalInd(g)),1:timings(1)*10))/(timings(1)/10e2);
                 onsetRate = sum(spikeMatrix(sortedIndex(finalInd(g)),timings(1)*10:(timings(1)+timings(2))*10))/(timings(2)/10e2);
                 offsetRate = sum(spikeMatrix(sortedIndex(finalInd(g)),(timings(1)+timings(2))*10:sum(timings)*10))/(timings(3)/10e2);
+%             offsetRate = sum(spikeMatrix(sortedIndex(finalInd(g)),(timings(1)+timings(2))*10:11500))/(timings(3)/10e2);
+
+
            
                 subbedRateOn(g)= onsetRate - bgRate;
                 subbedRateOff(g)= offsetRate - bgRate;
             end
                 
-                
-       if params.bgRate == 1     
-            
-            
-            if double(indexHolder{1,a}(intCode)) > 0
-                onResp(u) = mean(subbedRateOn);
-                offResp(u) = mean(subbedRateOff);
-                
-%                 onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
-%                 offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+            if params.dataType == 1
+                if params.bgRate == 1
+                    
+                    
+                    if double(indexHolder{1,a}(intCode)) > 0
+                        onResp(u) = mean(subbedRateOn);
+                        offResp(u) = mean(subbedRateOff);
+                        
+                        %                 onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                        %                 offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+                    else
+                        onResp(u) = mean(subbedRateOff);
+                        offResp(u) = mean(subbedRateOn);
+                        
+                        %                 onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+                        %                 offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                    end
+                    
+                else
+                    
+                    if double(indexHolder{1,a}(intCode)) > 0
+                        %                 onResp(u) = mean(subbedRateOn);
+                        %                 offResp(u) = mean(subbedRateOff);
+                        
+                        onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                        offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+                        
+                    else
+                        %                 onResp(u) = mean(subbedRateOff);
+                        %                 offResp(u) = mean(subbedRateOn);
+                        
+                        onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+                        offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                        
+                    end
+                end
             else
-                onResp(u) = mean(subbedRateOff);
-                offResp(u) = mean(subbedRateOn);
                 
-%                 onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
-%                 offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                if double(indexHolder{1,a}(intCode)) > 0
+                    
+                    onResp(u) = mean(mean(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                    offResp(u) = mean(mean(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+                    
+                else
+                    
+                    onResp(u) = mean(mean(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
+                    offResp(u) = mean(mean(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+                    
+                end
             end
-            
-       else
-           
-            if double(indexHolder{1,a}(intCode)) > 0
-%                 onResp(u) = mean(subbedRateOn);
-%                 offResp(u) = mean(subbedRateOff);
-                
-                onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
-                 offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
-            else
-%                 onResp(u) = mean(subbedRateOff);
-%                 offResp(u) = mean(subbedRateOn);
-                
-                 onResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
-                 offResp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
-            end
-       end
-           
            
                
                
@@ -160,7 +205,7 @@ for a = 1:size(indexHolder,2)
             psthData(u,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
             figure(15); hold on
             subplot(1,size(indexHolder,2),a)
-            plot(psthData(u,:)+(100*(u-1)))
+            plot(psthData(u,:)+(300*(u-1)))
             title(indexHolder{1,a})
             
 %             rawData(u,:) = mean(epochStorage(sortedIndex(finalInd),:),1);
@@ -169,11 +214,11 @@ for a = 1:size(indexHolder,2)
 %             plot(rawData(u,:)+(325*(u-1)))
 %             title(indexHolder{1,a})
 %             
-%             spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
-%             figure(12); hold on
-%             subplot(1,size(indexHolder,2),a)
-%             plot(spikeData(u,:)+(1*(u-1)))
-%             title(indexHolder{1,a})
+            spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+            figure(12); hold on
+            subplot(1,size(indexHolder,2),a)
+            plot(spikeData(u,:)+(1*(u-1)))
+            title(indexHolder{1,a})
     end
 if a == params.saveIter
 
@@ -188,11 +233,12 @@ end
 % onResp
 
 
-uniqueOrientations = sort(str2double(uniqueOrientations));
+% uniqueOrientations = sort(str2double(uniqueOrientations));
+uniqueOrientations = sort(uniqueOrientations);
 
-% allRadii = [uniqueOrientations (uniqueOrientations+180)];
-% allRadii = allRadii*2*pi/360;
-allRadii = uniqueOrientations*2*pi/360;
+allRadii = [uniqueOrientations (uniqueOrientations+180)];
+allRadii = allRadii*2*pi/360;
+% allRadii = uniqueOrientations*2*pi/360;
 
 figure(a)
 subplot(1,2,1);
@@ -207,6 +253,58 @@ polar(uniqueOrientations * 2 * pi /360, offResp);
 title('OFF')
 % xlabel(num2str(indexHolder{1,a}'));
 xlabel(indexHolder{1,a}');
+
+figure(a+20)
+subplot(1,2,1);
+polar([allRadii 0], [onResp onResp onResp(1)]);
+title('ON')
+xlabel(analysisSplitters(1:(length(analysisSplitters)-1)));
+hold on
+subplot(1,2,2);
+polar([allRadii 0], [offResp offResp offResp(1)]);
+title('OFF')
+% xlabel(num2str(indexHolder{1,a}'));
+xlabel(indexHolder{1,a}');
+
+% figure(a+40)
+% subplot(1,2,1);
+% plot(uniqueOrientations, onResp)
+% title('ON')
+% xlabel(analysisSplitters(1:(length(analysisSplitters)-1)));
+% hold on
+% subplot(1,2,2);
+% plot(uniqueOrientations, offResp)
+% title('OFF')
+% % xlabel(num2str(indexHolder{1,a}'));
+% xlabel(indexHolder{1,a}');
+
+figure(a+45)
+plot(uniqueOrientations, onResp/max(abs(onResp)))
+title('ON and OFF responses')
+xlabel(analysisSplitters(1:(length(analysisSplitters)-1)));
+hold on
+plot(uniqueOrientations, offResp/max(abs(offResp)))
+% xlabel(num2str(indexHolder{1,a}'));
+xlabel(indexHolder{1,a}');
+
+maxOn = max(abs(onResp));
+maxOnOrientation = uniqueOrientations(onResp==maxOn);
+minOffOpposite = offResp(onResp==maxOn);
+
+maxOff = max(abs(offResp));
+maxOffOrientation = uniqueOrientations(offResp==maxOff);
+minOnOpposite = onResp(offResp==maxOff);
+fileName = params.fileName;
+
+
+
+if a==params.saveIter && params.saveGraph == 1
+    if exist('C:\Users\reals\Documents\PhD 2021\ClarinetExports\PreferredOrientations.mat') == 2
+    save('C:\Users\reals\Documents\PhD 2021\ClarinetExports\PreferredOrientations.mat','maxOn','maxOnOrientation','minOffOpposite','maxOff','minOnOpposite','fileName','-append')
+    else
+    save('C:\Users\reals\Documents\PhD 2021\ClarinetExports\PreferredOrientations.mat','maxOn','maxOnOrientation','minOffOpposite','maxOff','minOnOpposite','fileName')
+    end
+end
 
 if double(indexHolder{1,params.saveIter}(1)) <= 0 
     polarity = 0; % 1 on 0 off
@@ -226,7 +324,7 @@ elseif strcmp(params.stimName,'moving bar')
     figure(10);clf;
 resp = [];
 for a = 1:size(indexHolder,2)
-        orientations = splitCell{2,size(splitCell,2)};
+        orientations = str2double(splitCell{2,size(splitCell,2)});
         orientations = orientations((indexHolder{2,a}));
          [orientations I] = sort(orientations);
          sortedIndex = indexHolder{2,a};
@@ -244,7 +342,7 @@ for a = 1:size(indexHolder,2)
             psthData(u,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
             figure(10); hold on
             subplot(1,size(indexHolder,2),a)
-            plot(psthData(u,:)+(300*(u-1)))
+            plot(psthData(u,:)+(600*(u-1)))
             title(indexHolder{1,a})
             
 %             rawData(u,:) = mean(epochStorage(sortedIndex(finalInd),:),1);
@@ -280,7 +378,8 @@ end
 % end
 
 
-uniqueOrientations = sort(str2double(uniqueOrientations));
+% uniqueOrientations = sort(str2double(uniqueOrientations));
+uniqueOrientations = sort(uniqueOrientations);
 
 % allRadii = uniqueOrientations;
 % allRadii = allRadii*2*pi/360;
@@ -296,8 +395,8 @@ title('ON')
 xlabel(analysisSplitters(1:(length(analysisSplitters)-1)));
 ylabel(indexHolder{1,a}');
 
-figure(a+20)
-bar(uniqueOrientations,resp)
+% figure(a+20)
+% bar(uniqueOrientations,resp)
 
 if double(indexHolder{1,params.saveIter}(1)) <= 0 
     polarity = 0; % 1 on 0 off

@@ -29,7 +29,7 @@ for b = 1:size(indexHolder,2)
     
     spikevalsforFit = []; 
     
-     
+
     for g = 1:length(xVarStatic)
         
         if isnan(unique(str2double(xVar)))
@@ -37,6 +37,7 @@ for b = 1:size(indexHolder,2)
         else
             xVarLabel = unique(str2double(xVar));
         end
+
         finalInd = find(xVar==string(xVarLabel(g)));
         
         if size(splitCell,2) == 1 %makes this work w/ single splitter.  indices in index holder don't need separating by sorting var (like orientation)
@@ -57,6 +58,9 @@ for b = 1:size(indexHolder,2)
     ylabel(xVarLabel(g));
     xlabel('time (ms)');
     sgtitle(strcat([splitCell{1,1:size(splitCell,2)-1}]," ",indexHolder{1,b}));
+    
+    figure(20+g)
+    plot(xvals,mean(psthMatrix(sortedIndex(finalInd),:),1));
     
 
     figure(15+a)  
