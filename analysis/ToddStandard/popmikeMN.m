@@ -22,7 +22,7 @@ binRate = 1e3;
 
     typeDir = dir;
     fileSet = char(string({typeDir.name}));
-    fileIndex = fileSet(:,:,fileSet(:,1,:) == 'P');
+    fileIndex = fileSet(:,:,fileSet(:,1,:) == 'S');
     
     cellTypeData = [];
     typeInd = 1;
@@ -119,38 +119,64 @@ multiCellStatic(d) = meanStatic;
               starterParams = [.2,-1.5];
               %horizontal  
 %                 % rand seq
-%               mParams = fitMultiVarParams(xBin([1,2],:),yBin([1,2],:),1,starterParams);
-%               outNLHZ = multiHZNL(mParams,xBin([1,2],:));
-%               hzRSE = [mParams(3),mParams(4)];
+              mParams = fitMultiVarParams(xBin([1,2],:),yBin([1,2],:),1,starterParams);
+              outNLHZ = multiHZNL(mParams,xBin([1,2],:));
+              hzRSE(d,:) = [mParams(3),mParams(4)];
+
+
+              figure(19)
+              plot(xBin(1,:),outNLHZ(1,:),'b')
+              hold on
+              plot(xBin(2,:),outNLHZ(2,:),'r')
+         
+              plot(xBin(1,:),yBin(1,:),'b--')
+              plot(xBin(2,:),yBin(2,:),'r--')
+              legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
+              title('Raw and Modeled NLs - XShift')
+              xlabel('input')
+              ylabel('spike rate (Hz)')
 %               
                 % rand static
-              mParams = fitMultiVarParams(xBin([1,3],:)',yBin([1,3],:)',1,starterParams);
-              outNLHZ = multiHZNL(mParams,xBin([1,3],:)');
-              staticErrorHZ1(d) = immse(yBin(3,:)',outNLHZ(:,2));
+              mParams = fitMultiVarParams(xBin([1,3],:),yBin([1,3],:),1,starterParams);
+              outNLHZ = multiHZNL(mParams,xBin([1,3],:));
+              staticErrorHZ1(d) = immse(yBin(3,:),outNLHZ(2,:));
               
            
-            MSErandHZ2(d) = immse(yBin(1,:)',outNLHZ(:,1));
+            MSErandHZ2(d) = immse(yBin(1,:),outNLHZ(1,:));
             MSErandHZ(d) = MSErandHZ2(d)/staticErrorHZ1(d);
              
               
                 % seq static
-              mParams = fitMultiVarParams(xBin([2,3],:)',yBin([2,3],:)',1,starterParams);
-              outNLHZ = multiHZNL(mParams,xBin([2,3],:)');
+              mParams = fitMultiVarParams(xBin([2,3],:),yBin([2,3],:),1,starterParams);
+              outNLHZ = multiHZNL(mParams,xBin([2,3],:));
               
 
-              staticErrorHZ2(d) = immse(yBin(3,:)',outNLHZ(:,2));
-            MSEseqHZ2(d) = immse(yBin(2,:)',outNLHZ(:,1));
+              staticErrorHZ2(d) = immse(yBin(3,:),outNLHZ(2,:));
+            MSEseqHZ2(d) = immse(yBin(2,:),outNLHZ(1,:));
             MSEseqHZ(d) = MSEseqHZ2(d)/staticErrorHZ2(d);
               
               
               %gain
-                % rand seq
-%               mParams = fitMultiVarParams(xBin([1,2],:)',yBin([1,2],:)',0,starterParams);
-%               outNLGain = multiGainNL(mParams,xBin([1,2],:)');
-%               
+               % rand seq
+              mParams = fitMultiVarParams(xBin([1,2],:)',yBin([1,2],:)',0,starterParams);
+              outNLGain = multiGainNL(mParams,xBin([1,2],:)');
+              
+               figure(18)
+           
+              plot(xBin(1,:),outNLGain(:,1),'b')
+              hold on
+              plot(xBin(2,:),outNLGain(:,2),'r')
+              plot(xBin(1,:),yBin(1,:),'b--')
+              plot(xBin(2,:),yBin(2,:),'r--')
+              legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
+              title('Raw and Modeled NLs - Gain Shift')
+              xlabel('input')
+              ylabel('spike rate (Hz)')
+              pause
+              
               
                 % rand static
-              
+                 
               mParams = fitMultiVarParams(xBin([1,3],:)',yBin([1,3],:)',0,starterParams);
               outNLGain = multiGainNL(mParams,xBin([1,3],:)');
               
@@ -215,6 +241,13 @@ multiCellStatic(d) = meanStatic;
               
         end
    
+        figure(29)
+       pcChangeHzShift =  (-diff(hzRSE,1,2)./sum(hzRSE,2))*100;
+       plot(ones(size(pcChangeHzShift)),pcChangeHzShift,'.','LineWidth',10)
+       xlabel('arbitrary')
+       ylabel('Percent Change Horizontal Shift Parameter')
+       title('Change in X Shift Parameter in NL Models for Motion & Random Conditions')
+       
 
         seqChange=[];
 randChange=[];
