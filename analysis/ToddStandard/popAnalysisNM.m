@@ -29,7 +29,7 @@ spikeMeans = cell(13,size(folderSet,3));
     allRandMeans = [];
     allIndex = [];
 %   1:size(folderSet,3)
-for c = 6:6 
+for c = 8:8 
     
     cd(strcat(typesFolder,folderSet(:,:,c))) 
     
@@ -135,7 +135,7 @@ for c = 6:6
            if strcmp(cellType,'ONSmooth') 
              switch cellName
                  case '20190927Bc1_MN.mat'
-                    logicalMatrix = contains(matrixSplit,["gaussian", "Control", "250", "90", "stationary","sequential","random"]);
+                    logicalMatrix = contains(matrixSplit,["gaussian", "Control", "300", "90", "stationary","sequential","random"]);
                     outI = [find(sum(logicalMatrix,2)==5)];
                  case '20200630Ac1_MN.mat'
                     logicalMatrix = contains(matrixSplit,["gaussian", "motion and noise", "180", "stationary","sequential","random"]);
@@ -311,12 +311,27 @@ staticMeanLast5(d) = mean(mean(sum(spikingData(staticIndex,50000:100000),2),2));
             
 % fits here %%%%%%%%%%%%%%%%%%%%            
                 %go with 1 being random, 2 sequential, 3 static
-              starterParams = [.2,-1.5];
+              starterParams = [.2, 0];
               %horizontal  
                 % rand seq
               mParams = fitMultiVarParams(xBin([1,2],:),yBin([1,2],:),1,starterParams);
               outNLHZ = multiHZNL(mParams,xBin([1,2],:));
-              hzRSE = [mParams(3),mParams(4)];
+              hzRSE(d,:) = [mParams(3),mParams(4)];
+              
+              figure(19)
+              plot(xBin(1,:),outNLHZ(1,:),'b')
+              hold on
+              plot(xBin(2,:),outNLHZ(2,:),'r')
+         
+              plot(xBin(1,:),yBin(1,:),'b--')
+              plot(xBin(2,:),yBin(2,:),'r--')
+              legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
+              title('Raw and Modeled NLs - XShift')
+              xlabel('input')
+              ylabel('spike rate (Hz)')
+              
+              
+              
               
 %                rand static
               mParams = fitMultiVarParams(xBin([1,3],:),yBin([1,3],:),1,starterParams);
@@ -351,6 +366,20 @@ staticMeanLast5(d) = mean(mean(sum(spikingData(staticIndex,50000:100000),2),2));
                 % rand seq
               mParams = fitMultiVarParams(xBin([1,2],:)',yBin([1,2],:)',0,starterParams);
               outNLGain = multiGainNL(mParams,xBin([1,2],:)');
+              
+              figure(18)
+           
+              plot(xBin(1,:),outNLGain(:,1),'b')
+              hold on
+              plot(xBin(2,:),outNLGain(:,2),'r')
+              plot(xBin(1,:),yBin(1,:),'b--')
+              plot(xBin(2,:),yBin(2,:),'r--')
+              legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
+              title('Raw and Modeled NLs - Gain Shift')
+              xlabel('input')
+              ylabel('spike rate (Hz)')
+              pause
+             
               
               
                 %rand static
