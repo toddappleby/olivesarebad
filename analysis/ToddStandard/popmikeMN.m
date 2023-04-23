@@ -25,7 +25,7 @@ binRate = 1e3;
     fileIndex = fileSet(:,:,fileSet(:,1,:) == 'S');
     
     cellTypeData = [];
-    typeInd = 1;
+    typeInd = 1; 
 %     
 
         for d = 1:size(fileIndex,3)
@@ -93,7 +93,11 @@ xBin(3,:)=analysisParams.xBin(3,:);
 yBin(3,:)=analysisParams.yBin(3,:);
     
 end
-            
+ 
+  figure(13)
+  subplot(1,size(fileIndex,3),d)
+  plot(xBin',yBin')
+
 % yBin(1,xBin(1,:)<0)=0;
 % yBin(2,xBin(2,:)<0)=0;
 % yBin(3,xBin(3,:)<0)=0;
@@ -113,6 +117,7 @@ meanStatic = mean(sum(staticSpikes,2));
 multiCellSeq(d) = meanSeq;
 multiCellRand(d) = meanRand;
 multiCellStatic(d) = meanStatic;
+
 
 %%%%%
                 %go with 1 being random, 2 sequential, 3 static
@@ -237,7 +242,7 @@ multiCellStatic(d) = meanStatic;
 %               SeqGain1(d) = mParams(4)-mParams(2);
               %percent change final-initial/initial
               
-
+      
               
         end
    
