@@ -5,6 +5,7 @@ function Y = multiVarNL(params, X)
 
 Y(:,1) = params(1)*normcdf(params(2)*X(:,1)+params(3), 0, 1);
 Y(:,2) = params(1)*normcdf(params(4)*X(:,2)+params(5), 0, 1);
+Y(:,3) = params(1)*normcdf(params(6)*X(:,2)+params(7), 0, 1);
 % 
 % Y(:,1) = params(1)./(1+exp(params(2)*(X(:,1)+params(3))));
 % Y(:,2) = params(1)./(1+exp(params(4)*(X(:,2)+params(5))));
