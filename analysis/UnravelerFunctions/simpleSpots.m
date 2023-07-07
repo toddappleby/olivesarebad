@@ -26,7 +26,10 @@ end
             uniqueSpotSizes = unique(spotSizes); %because I don't know how to index the unique function
             finalInd = find(spotSizes==uniqueSpotSizes(b));    
             onResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
-            offResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));                
+            offResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2)); 
+            
+            onError(b) = sem(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
+            offError(b) = sem(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2));
             
             if params.dataType ==1
             psthData(b,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
@@ -38,7 +41,7 @@ end
             psthData(b,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
             figure(10); hold on
             subplot(1,size(indexHolder,2),a)
-            plot(psthData(b,:)+(1*(b-1)))
+            plot(psthData(b,:)+(1000*(b-1)))
             title(indexHolder{1,a})
             end
             
@@ -48,12 +51,20 @@ end
         
          
          
+         
          figure(1) 
+         
+        indexHolder
         
          subplot(size(indexHolder,2),1,a)
          if indexHolder{1,a}(spotIntensityPlace) <= 0
+             figure(1)
         plot(uniqueSpotSizes,onResp,'Color','r','LineWidth',2); hold on
         plot(uniqueSpotSizes,offResp,'Color','b','LineWidth',2);
+        figure(14)
+        errorbar(uniqueSpotSizes,onResp,onError);
+        hold on
+        errorbar(uniqueSpotSizes,offResp,offError);
         legend('Off Response','On Response')
         xlabel('spot sizes')
         if params.dataType == 1
