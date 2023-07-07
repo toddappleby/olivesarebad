@@ -1,8 +1,8 @@
 %% Spatial  Noise
 
 exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\';
-experimentDate = '2023_0202';
-cellNum = 'Ac1';
+experimentDate = '2023_0614';
+cellNum = 'Ac3';
 cd(strcat(exportDirectory,experimentDate))
 
 cd(strcat(exportDirectory,experimentDate)) 
@@ -18,11 +18,10 @@ cellData = epochs;
 % splitFactors = ["frameRate","chromaticClass","contrast"];
 
 
-
-splitFactors = ["stixelSize","contrast"];
+splitFactors = ["stixelSize","chromaticClass","contrast"];
 epochGroup = 'Control';
 
-desiredSTD = 6;
+desiredSTD = 5;
 
 splitCell = cell(2,length(splitFactors));
 
@@ -45,8 +44,8 @@ for i = 1:length(epochs)
        oAnalysis = epochs(i).meta.onlineAnalysis;
     end
    
-                  if strcmp(displayName,'Spatial Noise') && strcmp(egLabel,'Control')  
-%                   if strcmp(displayName,'Jittered Noise') && strcmp(egLabel,epochGroup) 
+%                   if strcmp(displayName,'Spatial Noise') && strcmp(egLabel,'Control')  
+                  if strcmp(displayName,'Jittered Noise') && strcmp(egLabel,epochGroup) 
 %              if strcmp(displayName,'Fast Noise') && strcmp(egLabel,epochGroup)  
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
@@ -57,9 +56,11 @@ for i = 1:length(epochs)
                
                     splitCell{2,s}=[splitCell{2,s} stringedEntry];
                 end
+
             count = count + 1;
 %             intensity(count) = epochs(i).meta.intensity;
             epochStorage(count,:) = epochs(i).epoch;
+            
             frameTimes(count,:) = frameTs(i).epoch;
             numXChecks(count) = epochs(i).meta.numXChecks;
             numYChecks(count) = epochs(i).meta.numYChecks;
@@ -163,11 +164,57 @@ params = struct();
 params.saveGraph =0;
 params.stimName = 'bars';
 timings = [preTime stimOrig tailTime];
-[allM,frameVals] = doSpatialMap(psthMatrix,numXChecks(1),numYChecks(1),numFrames,seeds,timings);
-% [allM,allData,frameVals,frameValsCombined,frameTs,t1,t2] = doJitteredMap(binnedSpikes(indexHolder{2,1},:),max(numXChecks),max(numYChecks),max(numYStixels),max(numXStixels),numFrames,seeds(indexHolder{2,1}),timings);
-% [allM,allData,frameVals,frameValsCombined,frameTs,t1,t2] = doJitteredMap(binnedSpikes(indexHolder{2,2},:),min(numXChecks),min(numYChecks),min(numYStixels),min(numXStixels),numFrames,seeds(indexHolder{2,2}),timings);
+% [allM,frameVals] = doSpatialMap(psthMatrix,numXChecks(1),numYChecks(1),numFrames,seeds,timings);
+[allM,allData,fvYellow,fvBlue,frameValsCombined,frameTs,t1,t2] = doJitteredMap(binnedSpikes(indexHolder{2,1},:),max(numXChecks),max(numYChecks),max(numYStixels),max(numXStixels),indexHolder{1,1}(2),numFrames,seeds(indexHolder{2,1}),timings);
+% [allM,allData,frameVals,frameValsCombined,frameTs,t1,t2] = doJitteredMap(binnedSpikes(indexHolder{2,2},:),min(numXChecks),min(numYChecks),min(numYStixels),min(numXStixels),indexHolder{1,2}(2),numFrames,seeds(indexHolder{2,2}),timings);
 % [allMBlue,allMYellow,allData,fvBlue,frameValsCombined,frameTs,t1,t2,fvYellow] = doFastMap(binnedSpikes,numXChecks(1),numYChecks(1),numYStixels(1),numXStixels(1),numFrames,seeds,timings);
+%% Interspike Interval
+
+allTimes = [];
+isiTmp=[];
+
+for t = 1:size(spikeMatrix,1)
+    
+    spikeTimes = find(spikeMatrix(t,:)>0);
+    isiTmp = diff(spikeTimes/10)'; %samplerate / binrate for milleseconds
+    allTimes = [allTimes; isiTmp];
+    
+     
+end
+
+[y,x]= getSpikeAutocorrelation(allTimes); 
+ 
+figure
+plot(y)
+%% plot test 1
+
+for c = 1:size(allM,3)
+    imagesc(allM(:,:,c))
+    
+    pause
+end
+
+% for c = 1:size(sta,3)
+%     imagesc(sta(:,:,c))
+%     pause 
+% end
+% figure(5) 
+% for p = 1:6        
+% subplot(2,3,p)
+% imagesc(sta(:,:,p+1))
+% title(p+1)
+% end
+
+
 %% RGB Matrix
+
+% RGBMatrix = zeros(size(fvYellow,1),size(fvYellow,2),size(fvYellow,3),3);
+% 
+% RGBMatrix(:,:,:,1)=fvYellow;
+% RGBMatrix(:,:,:,2)=fvYellow;
+% RGBMatrix(:,:,:,3)=fvBlue;
+
+
 
 RGBMatrix(:,:,1) = fvYellow(:,:,1);
 RGBMatrix(:,:,2) = fvYellow(:,:,1);
@@ -238,23 +285,7 @@ sta = zeros(numYChecks(1),numXChecks(1),1276);
             sta(k,m,:) = tmp(1 : 1276);
         end
     end
-%% plot test 1
 
-for c = 1:size(allM,3)
-    imagesc(allM(:,:,c))
-    pause
-end
-
-% for c = 1:size(sta,3)
-%     imagesc(sta(:,:,c))
-%     pause
-% end
-% figure(5)
-% for p = 1:6        
-% subplot(2,3,p)
-% imagesc(sta(:,:,p+1))
-% title(p+1)
-% end
 %% LN NL LN NL LN 
 
 % stim = frameValues(17,30,:);
