@@ -1,13 +1,13 @@
 %% load FT first, give different name --- #1
 % cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1107') %2019 1107 bc7 sbc
-cellDate = '2023_0202';
-cellNum = 'Ac3';
+cellDate = '2021_0122';
+cellNum = 'Ac1';
 cellName = strcat(cellDate,cellNum);
 
 loadDate = char(cellDate);
 loadDate = strcat(loadDate(1:4),loadDate(6:9));
 
-fileName = strcat(loadDate,cellNum,'.mat');              
+fileName = strcat(loadDate,cellNum,'.mat');             
 
 % directory = string("/Users/toddappleby/Documents/Data/Clarinet Exports/" + cellDate);
 directory = string("C:\Users\reals\Documents\PhD 2021\ClarinetExports\" + cellDate); %WINDOWS <<
@@ -76,19 +76,19 @@ timings = [preTime stimOrig tailTime];
 % saveStuff.ONParasolC = ONParasolC;
 
 logi = contrast == .05;
-[cSensitivity, ~, ~] = frequencyModulation(psthMatrix(logi,5001:end ), 10000, 4, 'avg', 1, [])  
+[cSensitivity, ~, ~] = frequencyModulation(mean(psthMatrix(logi,5001:end ),1), 10000, 4, 'avg', 1, []);
 %% chirp regurgitation
 dataType = 1;
 clear epochStorage
 saveFlag = 0;
 count =0;
-maxFreq = 30;
+maxFreq = 25; %at least 1 has 22 randomly ... maybe others?
 
 controlOrAlt = 'Control';
 % controlOrAlt = 'AltCenter';
 drawStruct = struct(); 
 
-desiredSTD=6; 
+desiredSTD=4; 
 
 if dataType == 1
 for i = 1:length(epochs)
@@ -367,20 +367,20 @@ plot(tester,fit/max2,'b')
 
 %% MTF spots and annuli
 dataType=1;
-currWanted='excitation';
-% currWanted='inhibition';
+% currWanted='excitation';
+currWanted='inhibition';
 splitFactors = ["contrast","stimulusClass","temporalFrequency","temporalClass","chromaticClass","radius"];
 % splitFactors = ["temporalFrequency","searchAxis","barSize","position"];
 runSplitter = ["radius"]; 
 
 controlOrAlt =  "Control";
 % controlOrAlt =  "NDF 4";
-% controlOrAlt =  "Whole cell_exc";
+% controlOrAlt =  "Wholecell_exc";
 % controlOrAlt =  "AltCenter";
 
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD =5;
+desiredSTD =6;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -410,8 +410,8 @@ for i = 1:length(epochs)
 %    if strcmp(displayName,' Fspot') 
    if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,controlOrAlt)
     temporalClass = epochs(i).meta.temporalClass;
-    if strcmp(temporalClass,'sinewave')
-%        if strcmp(temporalClass,'pulse') 
+%     if strcmp(temporalClass,'sinewave')
+       if strcmp(temporalClass,'pulse') 
         count = count + 1;
         for s = 1:length(splitFactors)
             if ischar(getfield(epochs(i).meta,splitFactors(s)))
@@ -450,9 +450,9 @@ else
   end
   
 currType=[];
-          if strcmp(egLabel,'Whole cell_exc') || strcmp(egLabel, 'Wholecell__exc')
+          if strcmp(egLabel,'Whole cell_exc') || strcmp(egLabel, 'Wholecell_exc')
            currType = 'excitation';
-       elseif strcmp(egLabel,'Whole cell_inh')
+       elseif strcmp(egLabel,'Whole cell_inh') || strcmp(egLabel, 'Wholecell_inh')
            currType = 'inhibition';
        end
 
@@ -575,8 +575,8 @@ params.dataType = dataType;
 params.cellName= cellName;
 % saveGraph = 0;
 % stimName = 'Grating';
-freqAnalysis(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
-% simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+% freqAnalysis(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% 
 plot(excitation(13,:))
 hold on
@@ -688,20 +688,20 @@ timings = [preTime stimOrig tailTime];
 centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,sampleRate)
 %% Simple Response (Color spot and OMS)
 dataType = 1; 
-desiredSTD = 7;
-% 
-% splitFactors = ["stimulusClass"];
+desiredSTD = 5;
+% % 
+splitFactors = ["stimulusClass"];
 % splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["stimulusIndex"];
 % splitFactors = ["outerRadius","chromaticClass","contrast"];
 % splitFactors = ["chromaticClass"];
 % splitFactors = ["led"];
-splitFactors = ["backgroundIntensity","spotIntensity"];
-%
+% splitFactors = ["backgroundIntensity","spotIntensity"];
+% %
 % protocolID = "Doves Movie";
-% protocolID = "Object Motion Grating";
+protocolID = "Object Motion Grating";
 % protocolID = "Object Motion Dots";
-protocolID = "Single Spot PSTH";
+% protocolID = "Single Spot";
 % protocolID = "Chromatic Spot";
 % protocolID = "Led Pulse";
 splitCell = cell(2,length(splitFactors));
@@ -712,6 +712,7 @@ for g = 1:size(splitCell,2)
 end
 
 controlOrAlt = "Control";
+% controlOrAlt = "Whole cell_exc";
 % controlOrAlt = "rf annuli";
 % controlOrAlt = "AltCenter";
 % controlOrAlt = "AltCenter_exc"
@@ -810,7 +811,7 @@ elseif size(splitCell,2)>1
 else
     subtractSorter = 0;    
 end
-
+subtractSorter=0;
 for o = 1:size(splitCell,2) - subtractSorter %-1 because last parameter split is x val
     for p = 1:size(splitCell{2,1},2)
         allSets(p,o) = splitCell{2,o}(1,p);       
@@ -915,7 +916,7 @@ for a = 1:length(whatColors)
                continue
            end
 %            subplot(length(whatRadii),length(whatColors),b*a) %if for some reason more than just S- vs LM-
-            figure(23+aa)
+            figure(23)
             subplot(length(whatRadii),length(whatColors),(a+((b-1)*3))) 
            
            plot(mean(psthMatrix([indexHolder{2,finalConditional}],:))')
@@ -957,8 +958,8 @@ end
 
 %%  Expanding Spots
 dataType = 1; %0 if currents
-% currAnalysis = 'excitation'; %exc or inh for expanding spots protocol
-currAnalysis = 'inhibition';
+currAnalysis = 'excitation'; %exc or inh for expanding spots protocol
+% currAnalysis = 'inhibition';
 manualParse = false; firstTime=true; %only do manual threshold if required (turn simpleParse to false to use)
 
 nameCurrent = "Whole cell_inh"; % either Whole cell_exc or Whole cell_inh
@@ -966,7 +967,7 @@ splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"];
 
 runSplitter = ["currentSpotSize"];
 
-leakThreshold = 200;
+leakThreshold = 100;
 
 desiredSTD =4;
 % 
@@ -1183,12 +1184,16 @@ params.stimName = 'expanding';
 params.dataType = dataType;
 % saveGraph = 0;
 % stimName = 'Grating';
+
+% tester = cell(2,1);
+% tester{1,1}=indexHolder{1,2};
+% tester{2,1}=indexHolder{2,2};
 simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 
 %% Drifting Grating
 dataType =1;
 % currWanted = 'excitation';
-currWanted = 'inhibition';
+% currWanted = 'inhibition';
 splitFactors = ["apertureRadius","barWidth","temporalFrequency","orientation"];
 runSplitter = ["orientations"]; % not in use; logic problem
 
@@ -1202,7 +1207,7 @@ end
 
 controlOrAlt = 'Control';
 % controlOrAlt = 'AltCenter';
-% controlOrAlt = 'NDF 4';
+% controlOrAlt = 'NDF 1';
 
 count = 0;
 clear epochStorage 
@@ -1391,12 +1396,18 @@ dataType = 1; %0 if currents
 currAnalysis = 'excitation';
 % currAnalysis = 'inhibition';
 splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
+% splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
+
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
-subtractBGrate=0;
+subtractBGrate=1;
 
-desiredSTD =5;
+desiredSTD =4;
+% 
+protocolType = 'Oriented Bars';
+% protocolType = 'Oriented Bars Fixed';
+% protocolType = 'Chromatic Bars';
 
 splitCell = cell(2,length(splitFactors));
 
@@ -1404,8 +1415,8 @@ for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
 end
 
-% controlOrAlt = "Control";
-controlOrAlt = "NDF 4";  
+controlOrAlt = "Control";
+% controlOrAlt = "NDF 4";  
 % controlOrAlt =  "AltCenter";
 
 % egLabelforWholeCell = "Wholecell_exc";
@@ -1428,7 +1439,7 @@ for i = 1:length(epochs)
     end
     
    
-              if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,controlOrAlt)
+              if strcmp(displayName,protocolType) && strcmp(egLabel,controlOrAlt)
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
                       stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
@@ -1440,7 +1451,7 @@ for i = 1:length(epochs)
                 end
             count = count + 1;
             
-            intensity(count) = epochs(i).meta.intensity;
+%             intensity(count) = epochs(i).meta.intensity;
             epochStorage(count,:) = epochs(i).epoch;
             preTime = epochs(i).meta.preTime;
             stimTime = epochs(i).meta.stimTime;
@@ -1473,7 +1484,7 @@ else
 %        end
 %    end
 %    & strcmp(currType,currAnalysis)
-       if strcmp(displayName,'Oriented Bars') && strcmp(egLabel,egLabelforWholeCell) 
+       if strcmp(displayName,protocolType) && strcmp(egLabel,egLabelforWholeCell) 
       
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
@@ -1485,7 +1496,7 @@ else
                     splitCell{2,s}=[splitCell{2,s} stringedEntry];
                 end
             count = count + 1;
-            intensity(count) = epochs(i).meta.intensity;
+%             intensity(count) = epochs(i).meta.intensity;
             epochStorage(count,:) = epochs(i).epoch;
             preTime = epochs(i).meta.preTime;
             stimTime = epochs(i).meta.stimTime;
@@ -1576,7 +1587,7 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 
 dataType = 1; %0 if currents
 splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation"]; colorBar = false;
-% splitFactors = ["barColor","barSize","orientation"]; colorBar = true;
+% splitFactors = ["barColor","barSize","speed","orientation"]; colorBar = true;
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
@@ -1587,7 +1598,7 @@ splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation
 leakC = 100;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 5;
+desiredSTD = 4;
 
 if colorBar
     desiredProtocol = 'Moving Chromatic Bar';
@@ -1596,10 +1607,10 @@ else
 end
 
 
-% controlOrAlt = "Wholecell_inh";
+% controlOrAlt = "Wholecell_exc";
 controlOrAlt = "Control";
 
-% controlOrAlt = "AltCenter2";
+% controlOrAlt = "AltCenter";
 
 
 for g = 1:length(splitCell)
@@ -1655,7 +1666,7 @@ else
        leakC = epochs(i).epoch(1); 
    end
 
-       if strcmp(displayName,desiredProtocol) && strcmp(egLabel,'Wholecell_inh')
+       if strcmp(displayName,desiredProtocol) && strcmp(egLabel,controlOrAlt)
 %            if strcmp(displayName,'Moving Bar') && ~strcmp(oAnalysis,'extracellular')
 %            leakC
             barSizeFind = contains(splitFactors,'barSize');
@@ -1745,8 +1756,8 @@ params.saveGraph =0;
 %grating,bars
 params.stimName = 'moving bar';
 params.saveIter = 1;
-params.Region = 6500:14500;
-% params.Region = 14500:30000;
+params.Region = 7500:11000;
+% params.Region = 13000:17000;
 % params.Region = 1:35000;
 timings = [preTime stimOrig tailTime];
 dataToAlign = orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
