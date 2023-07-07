@@ -1,7 +1,7 @@
 %%OMS Texture 
 % exportFolder = '/Users/toddappleby/Documents/Data/Clarinet Exports/';
 exportFolder = '/Users/reals/Documents/PhD 2021/ClarinetExports/';
-protocolToAnalyze = 'Object Motion Grating';
+protocolToAnalyze = 'Object Motion Texture';
 typesFolder = strcat(exportFolder,protocolToAnalyze,'/','celltypes/');
 
 cd(typesFolder)
@@ -18,6 +18,7 @@ kmeansGroups=[];
 cellnameList = [];
 errorGroups = [];
 recordingType = 'extracellular';
+
 binRate = 1e3; 
 yCrossCells=[];
 holdType=[];
@@ -36,7 +37,7 @@ globalError = [];
 surroundError = [];
 
 % size(folderSet,3)
-for c = 1:size(folderSet,3)
+for c = 5:5 
 
 cd(strcat(typesFolder,folderSet(:,:,c)))
 
@@ -74,31 +75,31 @@ surroundForShow=[];
          globalSpikes = mean(sum(spikingData(indexHolder{2,3},stimStart:stimEnd),2));
          surroundSpikes = mean(sum(spikingData(indexHolder{2,4},stimStart:stimEnd),2));
          
-         for z = 1:length(indexHolder{2,3})
-         centerForShow(d,:) = binSpikeCount(spikingData(indexHolder{2,1}(z),stimStart:stimEnd),60,10000);
-         diffForShow(d,:)  = binSpikeCount(spikingData(indexHolder{2,2}(z),stimStart:stimEnd),60,10000);
-         globalForShow(d,:)  = binSpikeCount(spikingData(indexHolder{2,3}(z),stimStart:stimEnd),60,10000);
-         surroundForShow(d,:)  = binSpikeCount(spikingData(indexHolder{2,4}(z),stimStart:stimEnd),60,10000);
-         end
+%          for z = 1:length(indexHolder{2,3})
+%          centerForShow(d,:) = binSpikeCount(spikingData(indexHolder{2,1}(z),stimStart:stimEnd),60,10000);
+%          diffForShow(d,:)  = binSpikeCount(spikingData(indexHolder{2,2}(z),stimStart:stimEnd),60,10000);
+%          globalForShow(d,:)  = binSpikeCount(spikingData(indexHolder{2,3}(z),stimStart:stimEnd),60,10000);
+%          surroundForShow(d,:)  = binSpikeCount(spikingData(indexHolder{2,4}(z),stimStart:stimEnd),60,10000);
+%          end
         
          centerMeanType = [centerMeanType centerSpikes];
          diffMeanType = [diffMeanType diffSpikes];
          globalMeanType = [globalMeanType globalSpikes];
          surroundMeanType = [surroundMeanType surroundSpikes];
         
-         if d==20000
-             subplot(3,1,1)
-             plot(mean(centerForShow))
-             makeAxisStruct(gca,strtrim(['OMSGrating' '_OffPCenter']))
-              subplot(3,1,2)
-             plot(mean(diffForShow))
-             makeAxisStruct(gca,strtrim(['OMSGrating' '_OffPDiff']))
-              subplot(3,1,3)
-             plot(mean(globalForShow))
-             makeAxisStruct(gca,strtrim(['OMSGrating' '_OffPGlobal']))
-
-         
-         end
+%          if d==20000
+%              subplot(3,1,1)
+%              plot(mean(centerForShow))
+%              makeAxisStruct(gca,strtrim(['OMSGrating' '_OffPCenter']))
+%               subplot(3,1,2)
+%              plot(mean(diffForShow))
+%              makeAxisStruct(gca,strtrim(['OMSGrating' '_OffPDiff']))
+%               subplot(3,1,3)
+%              plot(mean(globalForShow))
+%              makeAxisStruct(gca,strtrim(['OMSGrating' '_OffPGlobal']))
+% 
+%          
+%          end
         end
         
         pause
@@ -121,6 +122,8 @@ surroundForShow=[];
         globalMean = [globalMean; mean(globalMeanType)];
         surroundMean = [surroundMean; mean(surroundMeanType)];
         
+       
+        
         centerError = [centerError; sem(centerMeanType)];
         diffError = [diffError; sem(diffMeanType)];
         globalError = [globalError; sem(globalMeanType)];
@@ -136,6 +139,51 @@ surroundForShow=[];
 end
 
  cd(typesFolder)
+ %% normalization if needed
+ 
+ meanMatrix = [centerMeanType;diffMeanType;globalMeanType];
+ 
+ normalizedMeanMatrix = meanMatrix./max(meanMatrix,[],1);
+ 
+ normalizedErrorMatrix = sem(normalizedMeanMatrix); %only works along 1 dimension?
+ normalizedMeanMatrix = mean(normalizedMeanMatrix,1);
+ 
+  normCenter = centerMeanType/max(centerMeanType);
+        normDiff = diffMeanType/max(diffMeanType);
+        normGlobal = globalMean/max(globalMeanType);
+        
+ 
+        
+  normCenterMean = mean(normCenter);
+  normDiffMean =  mean(normDiff);
+  normGlobalMean = mean(normGlobal);
+  
+  normCenterMean = normCenterMean/max([normCenterMean normDiffMean normGlobalMean]);
+  normDiffMean = normDiffMean/max([normCenterMean normDiffMean normGlobalMean]);
+  normGlobalMean = normGlobalMean/max([normCenterMean normDiffMean normGlobalMean]);
+  
+  normCenterErr = sem(normCenter);
+  normDiffErr = sem(normDiff);
+  normGlobalErr = sem(normGlobal);
+  
+  %% we could do the index instead
+  
+  diffIndex = (meanMatrix(2,:) - meanMatrix(1,:)) ./ (meanMatrix(2,:) + meanMatrix(1,:));
+  synchIndex = (meanMatrix(3,:) - meanMatrix(1,:)) ./ (meanMatrix(3,:) + meanMatrix(1,:));
+
+  meanDiff = mean(diffIndex);
+  errDiff = sem(diffIndex);
+  
+  meanSynch = mean(synchIndex);
+  errSynch = sem(synchIndex);
+  
+  errorbar([1 2],[meanSynch meanDiff],[errSynch errDiff])
+  
+  
+ %%
+ 
+ errorbar([1 2 3],normalizedMeanMatrix,normalizedErrorMatrix)
+ 
 %% plot it
 
 plot([centerMean(2) diffMean(2) globalMean(2) surroundMean(2)])
