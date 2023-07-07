@@ -1,4 +1,4 @@
-function [sta,dataAll,frameValues,frameValuesContinuous,frameTimesContinuous,staPerCheck,staPerCheck2] = doJitteredMap(r,numXChecks,numYChecks,numYStixels,numXStixels,numFrames,seeds,timings)
+function [sta,dataAll,yellowFV,blueFV,frameValuesContinuous,frameTimesContinuous,staPerCheck,staPerCheck2] = doJitteredMap(r,numXChecks,numYChecks,numYStixels,numXStixels,chromaticClass, numFrames,seeds,timings)
 
 binRate = 1000;
 binsPerFrame=1;
@@ -18,14 +18,21 @@ dataAll=[];
 addFTs=[];
  
 ft = zeros(numYChecks, numXChecks, numFrames*binsPerFrame);
-for m = 1 : length(seeds)
-   
+for m = 1 : length(seeds)length(seeds)
+   %
     
 %   frameValues = getSpatialNoiseFrames(numXChecks, numYChecks, numFrames, 'binary', 'achromatic', seeds(m));
-    frameValues = getJitteredNoiseFrames(numXStixels,numYStixels, numXChecks, numYChecks, numFrames, 2, seeds(m));
-    
+%     [frameValues,fv1,~,fv2] = getJitteredNoiseFrames(numXStixels,numYStixels, numXChecks, numYChecks, chromaticClass, numFrames, 2, seeds(m));
 
-     
+    yellowFV = manookinlab.util.getJitteredNoiseFrames(numXStixels,numYStixels, numXChecks, numYChecks, numFrames, 2, seeds(m));
+ 
+    blueFV = manookinlab.util.getJitteredNoiseFrames(numXStixels,numYStixels, numXChecks, numYChecks, numFrames, 2, seeds(m)+1);
+ 
+% size(fv2)
+% size(fv1)
+% size(frameValues)
+     frameValues = yellowFV;
+%        frameValues = blueFV;
     
     if binsPerFrame > 1
         frameValues = upsampleFrames(frameValues,binsPerFrame);
