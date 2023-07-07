@@ -10,7 +10,7 @@ loadDate = strcat(loadDate(1:4),loadDate(6:9));
 fileName = strcat(loadDate,cellNum,'.mat');             
 
 % directory = string("/Users/toddappleby/Documents/Data/Clarinet Exports/" + cellDate);
-directory = string("C:\Users\reals\Documents\PhD 2021\ClarinetExports\" + cellDate); %WINDOWS <<
+directory = string(strcat(getDirectory,cellDate)); %WINDOWS <<
 
 cd(directory)
 

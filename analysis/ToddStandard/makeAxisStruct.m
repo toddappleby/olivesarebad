@@ -1,5 +1,6 @@
 function [] = makeAxisStruct(ax, fname, varargin)
-basedir = '/Users/reals/Documents/PhD 2021/ClarinetExports/ImportToIgor/';
+[~,toIgorDir]=getDirectory();
+basedir = toIgorDir;
 if ~isempty(varargin)
     basedir=[basedir varargin{1} '/'];
 end
