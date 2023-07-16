@@ -25,8 +25,8 @@ count=0;
     
     cellTypeData = [];
     typeInd = 1; 
-
-for c = 1:size(folderSet,3)
+% size(folderSet,3)
+for c = [5 3 2 4 1]
     
     cd(strcat(typesFolder,folderSet(:,:,c))) 
     
@@ -161,7 +161,7 @@ multiCellStatic(d) = meanStatic;
                  mParamsHz = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),1,starterParams);
                  outNLHZOff = multiHZNL(mParamsHz,xBin([1,2,3],1:50));
                  
-                 mParamsGain = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),1,starterParams);
+                 mParamsGain = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),0,starterParams);
                  outNLGainOff = multiGainNL(mParamsGain,xBin([1,2,3],1:50));
                  
                  
@@ -178,8 +178,8 @@ multiCellStatic(d) = meanStatic;
               mParamsHz = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
               outNLHZ = multiHZNL(mParamsHz,xBin([1,2,3],:));
               
-              mParamsGain = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
-              outNLHZ = multiGainNL(mParamsGain,xBin([1,2,3],:));
+              mParamsGain = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),0,starterParams);
+              outNLGain = multiGainNL(mParamsGain,xBin([1,2,3],:));
               
               end
               hzRSE(d,:) = [mParamsHz(3),mParamsHz(4),mParamsHz(5)];
@@ -280,7 +280,7 @@ count = count+1;
 
 
        
-%      seqHzError(count) = sem(pcChangeHzSequential);
+
 
        pcChangeHzRandom =  (diff(hzRSE(:,[1 3]),1,2)./sum(hzRSE(:,[1 3]),2))*100;
        plot(count+.2,mean(pcChangeHzRandom),'b.','MarkerSize',30)
@@ -289,41 +289,40 @@ count = count+1;
        ylabel('Percent Change')
        title('Extent of XShift Parameter Change Relative to Static Condition')
        
-%     randHzError(count) = sem(pcChangeHzRandom);
+
     
 
     
        
       figure(31) %seq static
-       pcChangeGainSequential =  (diff(gainRSE(:,[2 3]),1,2)./sum(gainRSE(:,[2 3]),2))*100;
+       pcChangeGainSequential =  (diff(gainRSE(:,[3 2]),1,2)./sum(gainRSE(:,[3 2]),2))*100;
        plot(count,mean(pcChangeGainSequential),'r.','MarkerSize',30)
        hold on
        plot(count,pcChangeGainSequential,'ro','MarkerSize',5)
        
        
-%     seqGainError(count) = sem(pcChangeGainSequential);  
+
        
 
-       pcChangeGainRandom =  (diff(gainRSE(:,[1 3]),1,2)./sum(gainRSE(:,[1 3]),2))*100;
+       pcChangeGainRandom =  (diff(gainRSE(:,[3 1]),1,2)./sum(gainRSE(:,[3 1]),2))*100;
        plot(count+.2,mean(pcChangeGainRandom),'b.','MarkerSize',30)
-       plot(count+.2,pcChangeHzRandom,'bo', 'MarkerSize',5)
+       plot(count+.2,pcChangeGainRandom,'bo', 'MarkerSize',5)
        xlabel('cell type')
        ylabel('Percent Change')
        title('Extent of Gain Parameter Change Relative to Static Condition')
 
            
-%     randGainError(count) = sem(pcChangeGainRandom);
+
 
 end
 figure(29)
 hzFig = gca;
 hzFig.XTick =[1.2 2.2 3.2 4.2 5.2];
-xticklabels({'BT','OffParasol','OnParasol','OffSmooth','OnSmooth'})
-
+xticklabels({'OnSmooth','OnParasol','OffParasol','OffSmooth','BT'})
 figure(31)
 gainFig = gca;
 gainFig.XTick =[1.2 2.2 3.2 4.2 5.2];
-xticklabels({'BT','OffParasol','OnParasol','OffSmooth','OnSmooth'})
+xticklabels({'OnSmooth','OnParasol','OffParasol','OffSmooth','BT'})
 % X=[];
 % Y=[];
 % for g= 1:3
