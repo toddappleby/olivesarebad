@@ -1,7 +1,7 @@
  %% 
 % exportFolder = '/Users/toddappleby/Documents/Data/Clarinet Exports/';
-% exportFolder = '/Users/reals/Documents/PhD 2021/ClarinetExports/';
-exportFolder = 'C:\Users\todda\Documents\Primate Data\ClarinetExports\';
+exportFolder = getDirectory()
+% exportFolder = 'C:\Users\todda\Documents\Primate Data\ClarinetExports\';
 protocolToAnalyze = 'Motion And Noise';
 typesFolder = strcat(exportFolder,protocolToAnalyze,'/','celltypes/');
 
@@ -32,7 +32,9 @@ spikeMeans = cell(13,size(folderSet,3));
 %   1:size(folderSet,3)
 count=0;
 createSharableFormat = 1;
-for c = 3:3
+
+%
+for c = [13 12 8 7 3]
  
     cd(strcat(typesFolder,folderSet(:,:,c))) 
     
@@ -64,7 +66,12 @@ for c = 3:3
     MSErandHZ=[];
     cellList = char;
     cellTypeList=string;
-
+pcChangeHzSequential = [];
+pcChangeHzRandom = [];
+pcChangeGainSequential = [];
+pcChangeGainRandom = [];
+hzRSE = [];
+gainRSE = [];
 
         for d = 1:size(fileIndex,3)
 %           for d = 22:22
@@ -390,12 +397,23 @@ staticMeanLast5(d) = mean(mean(sum(spikingData(staticIndex,50000:100000),2),2));
 
                         mParams2 = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),1,starterParams);
                  outNLHZOff = multiHZNL(mParams2,xBin([1,2,3],1:50));
+                 
+                 
 
                  colororder(['b';'r';'k']);plot(xBin(:,1:50)',outNLHZOff','--');hold on;plot(xBin(:,1:50)',yBin(:,1:50)')
                  title('Broad Thorny NLs w/ Separate On/Off Model (XshiftOnly)')
                  xlabel('Spike Rate (Hz)')
                  ylabel('Input')
-                pause
+                
+                 mParams = mParams2;
+                 
+              else
+
+              mParams = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
+              outNLHZ = multiHZNL(mParams,xBin([1,2,3],:));
+              
+              end
+              hzRSE(d,:) = [mParams(3),mParams(4),mParams(5)];
 
 %                  mParams = fitMultiVarParams(xBin([1,2,3],51:100),yBin([1,2,3],51:100),1,starterParams);
 %                  outNLGainOn = multiGainNL(mParams,xBin([1,2,3],51:100)');
@@ -450,14 +468,7 @@ staticMeanLast5(d) = mean(mean(sum(spikingData(staticIndex,50000:100000),2),2));
 % pause
 
 
-
-               else
-
-              mParams = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
-              outNLHZ = multiHZNL(mParams,xBin([1,2,3],:));
-              
-              end
-              hzRSE(d,:) = [mParams(3),mParams(4),mParams(5)];
+     
 
 %               figure(20)
 %               colororder(['b';'r';'k']) %matches above order

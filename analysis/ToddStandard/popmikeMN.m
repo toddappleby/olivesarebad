@@ -1,10 +1,11 @@
 %% 
 % exportFolder = '/Users/toddappleby/Documents/Data/Clarinet Exports/';
-exportFolder = '/Users/reals/Documents/PhD 2021/ClarinetExports/';
+exportFolder = getDirectory();
 protocolToAnalyze = 'Motion And Noise_Mike';
 typesFolder = strcat(exportFolder,protocolToAnalyze,'/','celltypes/');
 
 cd(typesFolder)
+
 dataDir = dir;
 %figure out which folders start with 2! (data folders), then create array of
 %folder names
@@ -20,21 +21,38 @@ errorGroups = [];
 
 binRate = 1e3;
 
-    typeDir = dir;
-    fileSet = char(string({typeDir.name}));
-    fileIndex = fileSet(:,:,fileSet(:,1,:) == 'S');
+count=0;
     
     cellTypeData = [];
     typeInd = 1; 
-%     
 
+for c = 1:size(folderSet,3)
+    
+    cd(strcat(typesFolder,folderSet(:,:,c))) 
+    
+    cellType = strtrim(folderSet(:,:,c)); 
+
+    
+    typeDir = dir;
+    fileSet = char(string({typeDir.name}));
+    
+    fileIndex = fileSet(:,:,fileSet(:,1,:) == cellType(1));
+    
+    hzRSE = [];
+    gainRSE = [];
+    pcChangeHzSequential= [];
+    pcChangeHzRandom = [];
+    pcChangeGainSequential = [];
+    pcChangeGainRandom = [];
+    
         for d = 1:size(fileIndex,3)
            
 
          load(strtrim(fileIndex(:,:,d)))
          
          stimulusParams.cellName
-         %Where params are most appropriate?  prob the ones I ran the most:
+         %I used to generate filters and NL until I realized Mike had
+         %already done them
 %   
 %             
 %             
@@ -94,26 +112,33 @@ yBin(3,:)=analysisParams.yBin(3,:);
     
 end
  
-  figure(13)
-  subplot(1,size(fileIndex,3),d)
-  plot(xBin',yBin')
+
+%%%% for NL debuggin'
+%   figure(13)
+%   subplot(1,size(fileIndex,3),d)
+%   plot(xBin',yBin')
 
 % yBin(1,xBin(1,:)<0)=0;
 % yBin(2,xBin(2,:)<0)=0;
 % yBin(3,xBin(3,:)<0)=0;
 
-%%%%%% spike count stuff -- actuallty spike rate counts because psth
+%%%%%% get spike rates
 
-allSpikes = stimulusParams.response(:,500:end);
-bgClasses = stimulusParams.backgroundClasses;
-seqSpikes = allSpikes(contains(bgClasses,["sequential","drifting"]),:);
-randSpikes = allSpikes(contains(bgClasses,["random","jittering"]),:);
-staticSpikes = allSpikes(contains(bgClasses,"stationary"),:);
+    if iscell(stimulusParams.response)
+        meanRand = mean(sum(stimulusParams.response{2,1},2));
+        meanSeq = mean(sum(stimulusParams.response{2,2},2));
+        meanStatic = mean(sum(stimulusParams.response{2,3},2));
+    else
+        allSpikes = stimulusParams.response(:,250:end);
+        bgClasses = stimulusParams.backgroundClasses;
+        seqSpikes = allSpikes(contains(bgClasses,["sequential","drifting"]),:);
+        randSpikes = allSpikes(contains(bgClasses,["random","jittering"]),:);
+        staticSpikes = allSpikes(contains(bgClasses,"stationary"),:);
 
-meanSeq = mean(sum(seqSpikes,2));
-meanRand = mean(sum(randSpikes,2));
-meanStatic = mean(sum(staticSpikes,2));
-
+        meanSeq = mean(sum(seqSpikes,2));
+        meanRand = mean(sum(randSpikes,2));
+        meanStatic = mean(sum(staticSpikes,2));
+    end
 multiCellSeq(d) = meanSeq;
 multiCellRand(d) = meanRand;
 multiCellStatic(d) = meanStatic;
@@ -122,145 +147,73 @@ multiCellStatic(d) = meanStatic;
 %%%%%
                 %go with 1 being random, 2 sequential, 3 static
               starterParams = [.2,-1.5];
-              %horizontal  
-%                 % rand seq
-              mParams = fitMultiVarParams(xBin([1,2],:),yBin([1,2],:),1,starterParams);
-              outNLHZ = multiHZNL(mParams,xBin([1,2],:));
-              hzRSE(d,:) = [mParams(3),mParams(4)];
 
+                %All
+               
+              %each half modeled for broad thorny, only Off half used
+              if strcmp(cellType,'BroadThorny')
+                 mParams = fitMultiVarParams(xBin([1,2,3],51:100),yBin([1,2,3],51:100),1,starterParams);
+                 outNLHZOn = multiHZNL(mParams,xBin([1,2,3],51:100));
 
-              figure(19)
-              plot(xBin(1,:),outNLHZ(1,:),'b')
-              hold on
-              plot(xBin(2,:),outNLHZ(2,:),'r')
-         
-              plot(xBin(1,:),yBin(1,:),'b--')
-              plot(xBin(2,:),yBin(2,:),'r--')
-              legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
-              title('Raw and Modeled NLs - XShift')
-              xlabel('input')
-              ylabel('spike rate (Hz)')
-%               
-                % rand static
-              mParams = fitMultiVarParams(xBin([1,3],:),yBin([1,3],:),1,starterParams);
-              outNLHZ = multiHZNL(mParams,xBin([1,3],:));
-              staticErrorHZ1(d) = immse(yBin(3,:),outNLHZ(2,:));
-              
-           
-            MSErandHZ2(d) = immse(yBin(1,:),outNLHZ(1,:));
-            MSErandHZ(d) = MSErandHZ2(d)/staticErrorHZ1(d);
-             
-              
-                % seq static
-              mParams = fitMultiVarParams(xBin([2,3],:),yBin([2,3],:),1,starterParams);
-              outNLHZ = multiHZNL(mParams,xBin([2,3],:));
-              
-
-              staticErrorHZ2(d) = immse(yBin(3,:),outNLHZ(2,:));
-            MSEseqHZ2(d) = immse(yBin(2,:),outNLHZ(1,:));
-            MSEseqHZ(d) = MSEseqHZ2(d)/staticErrorHZ2(d);
-              
-              
-              %gain
-               % rand seq
-              mParams = fitMultiVarParams(xBin([1,2],:)',yBin([1,2],:)',0,starterParams);
-              outNLGain = multiGainNL(mParams,xBin([1,2],:)');
-              
-               figure(18)
-           
-              plot(xBin(1,:),outNLGain(:,1),'b')
-              hold on
-              plot(xBin(2,:),outNLGain(:,2),'r')
-              plot(xBin(1,:),yBin(1,:),'b--')
-              plot(xBin(2,:),yBin(2,:),'r--')
-              legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
-              title('Raw and Modeled NLs - Gain Shift')
-              xlabel('input')
-              ylabel('spike rate (Hz)')
-              pause
-              
-              
-                % rand static
+                 figure;colororder(['b';'r';'k']);plot(xBin(:,51:100)',outNLHZOn','--');hold on;plot(xBin(:,51:100)',yBin(:,51:100)')
                  
-              mParams = fitMultiVarParams(xBin([1,3],:)',yBin([1,3],:)',0,starterParams);
-              outNLGain = multiGainNL(mParams,xBin([1,3],:)');
-              
-              staticErrorGain(d) = immse(yBin(3,:)',outNLGain(:,2));
-              MSErandGain2(d) = immse(yBin(1,:)',outNLGain(:,1));
-              MSErandGain(d) = MSErandGain2(d)/staticErrorGain(d);
-              
-                % seq static
-              mParams = fitMultiVarParams(xBin([2,3],:)',yBin([2,3],:)',0,starterParams);
-              outNLGain = multiGainNL(mParams,xBin([2,3],:)');
-              
 
-              staticErrorGain(d) = immse(yBin(3,:)',outNLGain(:,2));
-              MSEseqGain2(d) = immse(yBin(2,:)',outNLGain(:,1));
-              MSEseqGain(d) = MSEseqGain2(d)/staticErrorGain(d);
-              
-%               MSEdecreaseGain(d) = (MSErandGain-MSErandHZ);
-%               MSEdecrease(d) = (MSEseqGain-MSEseqHZ);
-%               
-              
-              
-              %%%%%BOTH%%%%%
-%                 % rand seq
-%               mParams = fitMultiVarParams(xBin([1,2],:),yBin([1,2],:),2,starterParams);
-%               outNLHZGain = multiVarNL(mParams,xBin([1,2],:));
+                 mParamsHz = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),1,starterParams);
+                 outNLHZOff = multiHZNL(mParamsHz,xBin([1,2,3],1:50));
+                 
+                 mParamsGain = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),1,starterParams);
+                 outNLGainOff = multiGainNL(mParamsGain,xBin([1,2,3],1:50));
+                 
+                 
 
-                % rand static
-              mParams = fitMultiVarParams(xBin([1,3],:)',yBin([1,3],:)',2,starterParams);
-              outNLBoth = multiVarNL(mParams,xBin([1,3],:)');
-              
+                 colororder(['b';'r';'k']);plot(xBin(:,1:50)',outNLHZOff','--');hold on;plot(xBin(:,1:50)',yBin(:,1:50)')
+                 title('Broad Thorny NLs w/ Separate On/Off Model (XshiftOnly)')
+                 xlabel('Spike Rate (Hz)')
+                 ylabel('Input')
+                
+                 
+                 
+              else
 
+              mParamsHz = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
+              outNLHZ = multiHZNL(mParamsHz,xBin([1,2,3],:));
               
-%               RandHZ1(d) = mParams(5)-mParams(3);
-%               RandGain1(d) = mParams(4)-mParams(2);
-              tester(d,:)=mParams;
+              mParamsGain = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
+              outNLHZ = multiGainNL(mParamsGain,xBin([1,2,3],:));
               
-              RANDpChangeHZ(d)  = (mParams(5)-mParams(3))/mParams(5);
-              RANDpChangeGain(d) = (mParams(4)-mParams(2))/(-1*mParams(4));
-              %Negative denominator should put gain and hz shift into
-              %register beause the horizontal shift numbers are always
-              %negative for some reason (but leftward shift is
-              %*positive*)
+              end
+              hzRSE(d,:) = [mParamsHz(3),mParamsHz(4),mParamsHz(5)];
+              gainRSE(d,:) = [mParamsGain(3),mParamsGain(4),mParamsGain(5)];
               
-                % seq static
-              mParams = fitMultiVarParams(xBin([2,3],:)',yBin([2,3],:)',2,starterParams);
-              outNLBoth = multiVarNL(mParams,xBin([2,3],:)');
-              
-              
-
-              
-              tester2(d,:)=mParams;
-            
-              SEQpChangeHZ(d)  = (mParams(5)-mParams(3))/mParams(5);
-              SEQpChangeGain(d) = (mParams(4)-mParams(2))/(-1*mParams(4));
-              %low gain = low parameter, but not dividing by a negative num
-              
-%               SeqHZ1(d) = mParams(5)-mParams(3);
-%               SeqGain1(d) = mParams(4)-mParams(2);
-              %percent change final-initial/initial
-              
-      
-              
+%               figure(19)
+%               plot(xBin(1,:),outNLHZ(1,:),'b')
+%               hold on
+%               plot(xBin(2,:),outNLHZ(2,:),'r')
+%          
+%               plot(xBin(1,:),yBin(1,:),'b--')
+%               plot(xBin(2,:),yBin(2,:),'r--')
+%               legend('Random-Model','Sequential-Model','Random-Data','Sequential-Data')
+%               title('Raw and Modeled NLs - XShift')
+%               xlabel('input')
+%               ylabel('spike rate (Hz)')
+                
         end
-   
-        figure(29)
-       pcChangeHzShift =  (-diff(hzRSE,1,2)./sum(hzRSE,2))*100;
-       plot(ones(size(pcChangeHzShift)),pcChangeHzShift,'.','LineWidth',10)
-       xlabel('arbitrary')
-       ylabel('Percent Change Horizontal Shift Parameter')
-       title('Change in X Shift Parameter in NL Models for Motion & Random Conditions')
+%    
+%        figure(29)
+%        pcChangeHzShift =  (-diff(hzRSE,1,2)./sum(hzRSE,2))*100;
+%        plot(ones(size(pcChangeHzShift)),pcChangeHzShift,'.','LineWidth',10)
+%        xlabel('arbitrary')
+%        ylabel('Percent Change Horizontal Shift Parameter')
+%        title('Change in X Shift Parameter in NL Models for Motion & Random Conditions')
        
 
-        seqChange=[];
+seqChange=[];
 randChange=[];
 seqChange = 100*(multiCellSeq-multiCellStatic)./multiCellStatic;
 randChange = 100*(multiCellRand-multiCellStatic)./multiCellStatic;
 
 seqX = ones(1,length(multiCellSeq));
-figure
+figure(11);clf;
 % seqX=seqX+1;
 changeY = [seqChange' randChange']
 changeX = [seqX' seqX'+.2]
@@ -269,103 +222,108 @@ axis([.5 1.7 -20 80])
 line([seqX(1)' seqX(1)'+.2],[seqChange(1:end)' randChange(1:end)'])
 line([seqX(1)' seqX(1)'+.2],[mean(seqChange) mean(randChange)],'LineWidth',3)
 % makeAxisStruct(gca,strtrim(['changeDataMikeLINES' 'offSmooth']))
-        
-%         multiCellSeq(isnan(multiCellSeq))=[];
-%         multiCellRand(isnan(multiCellRand))=[];
-%         multiCellStatic(isnan(multiCellStatic))=[];
+
        
-        cellType = fileIndex(:,1:10,1);
-        
-%         RandHZ = RandHZ1(1:d)';
-%         RandGain = RandGain1(1:d)';
-%         SeqHZ = SeqHZ1(1:d)';
-%         SeqGain = SeqGain1(1:d)';
-        
-        RandHZOut=RANDpChangeHZ(1:d)'*100;
-        RandGainOut = RANDpChangeGain(1:d)'*100;
-        SeqHZOut = SEQpChangeHZ(1:d)'*100;
-        SeqGainOut = SEQpChangeGain(1:d)'*100;
-%         meanDecrease = mean(MSEdecrease);
-%         errorDecrease = sem(MSEdecrease);
-        
-        
-%         save(strcat('x',cellType,'_MN'),'RandHZOut','RandGainOut','SeqHZOut','SeqGainOut','meanDecrease','errorDecrease')
-%         save(strcat(cellType,'_MN'),'RandHZ','SeqHZ','RandGain','SeqGain','meanDecrease','errorDecrease')
-% FOR error graphs
-%     figure
-%     XforGraph = ones(1,length(RandHZOut));
-%     changeY = [MSEseqHZ' MSEseqGain'];
-%     changeX = [XforGraph' XforGraph'+.2];
-%     plot(changeX, changeY,'.')
-%     axis([.5 1.7 -50 50])
-%     line([XforGraph(1)' XforGraph(1)'+.2],[MSEseqHZ(1:end)' MSEseqGain(1:end)'])
-%     line([XforGraph(1)' XforGraph(1)'+.2],[mean(MSEseqHZ) mean(MSEseqGain)],'LineWidth',3)
-%     title('HZ vs Gain')
+%         cellType = fileIndex(:,1:10,1);
+
+
+
+%%%%%%%%%%%%%%%%%%% UNITY LINE GRAPHS
+
+% meanErrorHZ = mean(MSEseqHZ);
+% semErrorHZ=sem(MSEseqHZ);
 % 
-%     figure
-%     XforGraph = ones(1,length(RandHZOut));
-%     changeY = [MSEseqHZ' MSErandHZ'];
-%     changeX = [XforGraph' XforGraph'+.2];
-%     plot(changeX, changeY,'.')
-%     axis([.5 1.7 -50 50])
-%     line([XforGraph(1)' XforGraph(1)'+.2],[MSEseqHZ(1:end)' MSErandHZ(1:end)'])
-%     line([XforGraph(1)' XforGraph(1)'+.2],[mean(MSEseqHZ) mean(MSErandHZ)],'LineWidth',3)
-%     title('HZ')
-%     % 
-%     %         
-%     figure
-%     XforGraph = ones(1,length(RandHZOut));
-%     changeY = [MSEseqGain' MSErandGain'];
-%     changeX = [XforGraph' XforGraph'+.2];
-%     plot(changeX, changeY,'.')
-%     axis([.5 1.7 -30 30])
-%     line([XforGraph(1)' XforGraph(1)'+.2],[MSEseqGain(1:end)' MSErandGain(1:end)'])
-%     line([XforGraph(1)' XforGraph(1)'+.2],[mean(MSEseqGain) mean(MSErandGain)],'LineWidth',3)
-%     title('Gain')
+% meanErrorGain = mean(MSEseqGain);
+% semErrorGain = sem(MSEseqGain);
+% 
+% 
+% figure
+% changeY = [1-(MSEseqHZ/max([MSEseqHZ MSEseqGain]))'];
+% changeX = [1-(MSEseqGain/max([MSEseqHZ MSEseqGain]))'];
+% plot(changeX, changeY,'.')
+% line([0 1],[0 1],'Color','k')
+% title(cellType)
+% hold on
+% changeY = [1-MSErandHZ/max([MSErandHZ MSErandGain])' ];
+% changeX = [1-MSErandGain/max([MSErandHZ MSErandGain])'];
+% plot(changeX, changeY,'.')
+% 
+% figure
+% changeY = [MSEseqHZ'];
+% changeX = [MSEseqGain'];
+% plot(changeX, changeY,'.')
+% hold on
+% changeY = [MSErandHZ'];
+% changeX = [MSErandGain'];
+% plot(changeX, changeY,'.')
+% line([0 max([MSErandGain MSErandHZ MSEseqHZ MSEseqGain])],[0 max([MSErandGain MSErandHZ MSEseqHZ MSEseqGain])],'Color','k')
+% title(strtrim([cellType ' Straight MSE']))
+% plot(meanErrorGain,meanErrorHZ)
+% line([(meanErrorGain-semErrorGain) (meanErrorGain+semErrorGain)], [meanErrorHZ meanErrorHZ])
+% line([(meanErrorGain) (meanErrorGain)], [meanErrorHZ-semErrorHZ meanErrorHZ+semErrorHZ])
+% % makeAxisStruct(gca,strtrim(['MikeUnity_' 'onSmoothNorm']))
+% 
+% meanMSESeqHZ(typeInd)=mean(MSEseqHZ);
+% semMSESeqHZ(typeInd)=sem(MSEseqHZ);
+% meanMSESeqGain(typeInd)=mean(MSEseqGain);
+% semMSESeqGain(typeInd)=sem(MSEseqGain);
+% meanMSErandHZ(typeInd)=mean(MSErandHZ);
+% meanMSErandGain(typeInd)=mean(MSErandGain);
 
-%%%%%%%%%%%%%%%%%%% some bullshit unity line
-
-meanErrorHZ = mean(MSEseqHZ);
-semErrorHZ=sem(MSEseqHZ);
-
-meanErrorGain = mean(MSEseqGain);
-semErrorGain = sem(MSEseqGain);
-
-
-figure
-changeY = [1-(MSEseqHZ/max([MSEseqHZ MSEseqGain]))'];
-changeX = [1-(MSEseqGain/max([MSEseqHZ MSEseqGain]))'];
-plot(changeX, changeY,'.')
-line([0 1],[0 1],'Color','k')
-title(cellType)
-hold on
-changeY = [1-MSErandHZ/max([MSErandHZ MSErandGain])' ];
-changeX = [1-MSErandGain/max([MSErandHZ MSErandGain])'];
-plot(changeX, changeY,'.')
-
-figure
-changeY = [MSEseqHZ'];
-changeX = [MSEseqGain'];
-plot(changeX, changeY,'.')
-hold on
-changeY = [MSErandHZ'];
-changeX = [MSErandGain'];
-plot(changeX, changeY,'.')
-line([0 max([MSErandGain MSErandHZ MSEseqHZ MSEseqGain])],[0 max([MSErandGain MSErandHZ MSEseqHZ MSEseqGain])],'Color','k')
-title(strtrim([cellType ' Straight MSE']))
-plot(meanErrorGain,meanErrorHZ)
-line([(meanErrorGain-semErrorGain) (meanErrorGain+semErrorGain)], [meanErrorHZ meanErrorHZ])
-line([(meanErrorGain) (meanErrorGain)], [meanErrorHZ-semErrorHZ meanErrorHZ+semErrorHZ])
-% makeAxisStruct(gca,strtrim(['MikeUnity_' 'onSmoothNorm']))
-
-meanMSESeqHZ(typeInd)=mean(MSEseqHZ);
-semMSESeqHZ(typeInd)=sem(MSEseqHZ);
-meanMSESeqGain(typeInd)=mean(MSEseqGain);
-semMSESeqGain(typeInd)=sem(MSEseqGain);
-meanMSErandHZ(typeInd)=mean(MSErandHZ);
-meanMSErandGain(typeInd)=mean(MSErandGain);
+count = count+1;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%graphing
+      figure(29) % seq static
+       pcChangeHzSequential =  (diff(hzRSE(:,[2 3]),1,2)./sum(hzRSE(:,[2 3]),2))*100;
+       plot(count,mean(pcChangeHzSequential),'r.','MarkerSize',30)
+       hold on
+       plot(count,pcChangeHzSequential,'ro', 'MarkerSize',5)
 
 
+       
+%      seqHzError(count) = sem(pcChangeHzSequential);
+
+       pcChangeHzRandom =  (diff(hzRSE(:,[1 3]),1,2)./sum(hzRSE(:,[1 3]),2))*100;
+       plot(count+.2,mean(pcChangeHzRandom),'b.','MarkerSize',30)
+       plot(count+.2,pcChangeHzRandom,'bo', 'MarkerSize',5)
+       xlabel('cell type')
+       ylabel('Percent Change')
+       title('Extent of XShift Parameter Change Relative to Static Condition')
+       
+%     randHzError(count) = sem(pcChangeHzRandom);
+    
+
+    
+       
+      figure(31) %seq static
+       pcChangeGainSequential =  (diff(gainRSE(:,[2 3]),1,2)./sum(gainRSE(:,[2 3]),2))*100;
+       plot(count,mean(pcChangeGainSequential),'r.','MarkerSize',30)
+       hold on
+       plot(count,pcChangeGainSequential,'ro','MarkerSize',5)
+       
+       
+%     seqGainError(count) = sem(pcChangeGainSequential);  
+       
+
+       pcChangeGainRandom =  (diff(gainRSE(:,[1 3]),1,2)./sum(gainRSE(:,[1 3]),2))*100;
+       plot(count+.2,mean(pcChangeGainRandom),'b.','MarkerSize',30)
+       plot(count+.2,pcChangeHzRandom,'bo', 'MarkerSize',5)
+       xlabel('cell type')
+       ylabel('Percent Change')
+       title('Extent of Gain Parameter Change Relative to Static Condition')
+
+           
+%     randGainError(count) = sem(pcChangeGainRandom);
+
+end
+figure(29)
+hzFig = gca;
+hzFig.XTick =[1.2 2.2 3.2 4.2 5.2];
+xticklabels({'BT','OffParasol','OnParasol','OffSmooth','OnSmooth'})
+
+figure(31)
+gainFig = gca;
+gainFig.XTick =[1.2 2.2 3.2 4.2 5.2];
+xticklabels({'BT','OffParasol','OnParasol','OffSmooth','OnSmooth'})
 % X=[];
 % Y=[];
 % for g= 1:3
