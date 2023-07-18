@@ -1,6 +1,6 @@
 %% CHOOSE CELL TO LOAD
 exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\'; %new PC 
-experimentDate = '2023_0202';
+experimentDate = '2023_0607';
 cellNum = 'Ac3';
 cd(strcat(exportDirectory,experimentDate)) 
 %20210910Fc1
@@ -53,6 +53,7 @@ metaData = cellData(dNameLogical); %grab only protocol data
     apRadius = double(string(arrayfun(@(x)(getfield(x(1).meta,'apertureRadius')), metaData, 'UniformOutput', false)));
     barOrientation = double(string(arrayfun(@(x)(getfield(x(1).meta,'barOrientation')), metaData, 'UniformOutput', false)));
     epochLabel = string((string(arrayfun(@(x)(getfield(x(1).meta,'epochGroupLabel')), metaData, 'UniformOutput', false))));
+    epochTime = arrayfun(@(x)(getfield(x(1).meta,'epochTime')), metaData, 'UniformOutput', false);
     
     if isfield(metaData(1).meta,'frameDwell') % old data frameDwell wasn't changeable parameter
     frameDwell = double(string(arrayfun(@(x)(getfield(x(1).meta,'frameDwell')), metaData, 'UniformOutput', false)));
@@ -70,9 +71,23 @@ metaData = cellData(dNameLogical); %grab only protocol data
             stimPts = stimTime*10;
             tailpts = tailTime*10;
             
+        %sort by time
+        timeArray = [epochTime{1:end}];
+        [~,timeSorter] = sort(timeArray);
+        apRadius=apRadius(timeSorter);
+        barOrientation=barOrientation(timeSorter);
+        epochLabel=epochLabel(timeSorter);
+        noiseClass = noiseClass(timeSorter);
+        seedList = seedList(timeSorter);
+        bgClass = bgClass(timeSorter);
+        frameTimings = frameTimings(timeSorter,:);
+        rawData = rawData(timeSorter); % cell array
+        
+        
+            
 %% Grab Spikes, 
 
-desiredSTD = 5; %standard deviation used to detect spikes
+desiredSTD = 4; %standard deviation used to detect spikes
 
 for k = 1:length(rawData)
     
@@ -97,6 +112,8 @@ uniques(mode(classLabel))
 mode(apRadius)
 'orientation'
 mode(barOrientation)
+'framedwell'
+mode(frameDwell)
 %% spike times for auto correlation ! 
 
 allTimes = [];
@@ -126,21 +143,24 @@ gaussianOrBinary = 'gaussian'; %choose your fighter
 % gaussianOrBinary = 'binary';
 
 egLabelCompare = "Control";
+% egLabelCompare = "AltCenter";
 % egLabelCompare = "motion and noise";
 
 
 noiseSplitter = strcmp(gaussianOrBinary,noiseClass);
 egSplitter = strcmp(egLabelCompare,epochLabel);
 splitter2 = 90;
-splitter3 = 280;
+splitter3 = 350;
 splitter4 = 1;
+splitter5 = 1;
 
     %typical sorters
     splitIndex2 = barOrientation == splitter2;
     splitIndex3 = apRadius == splitter3;
-    splitIndex4 = seedList ~= splitter4; %change this to true for repeated seeds (   ) 
+    splitIndex4 = frameDwell == splitter4;
+    splitIndex5 = seedList ~= splitter5; %change this to true for repeated seeds (   ) 
 
-dumbSplit = splitIndex2./splitIndex3./splitIndex4./noiseSplitter./egSplitter;
+dumbSplit = splitIndex2./splitIndex3./splitIndex4./splitIndex5./noiseSplitter./egSplitter;
 dumbSplit = dumbSplit==1;
 
 if strcmp(gaussianOrBinary,'gaussian')

@@ -1,7 +1,7 @@
 %% load FT first, give different name --- #1
 % cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1107') %2019 1107 bc7 sbc
-cellDate = '2021_0122';
-cellNum = 'Ac1';
+cellDate = '2019_0927';
+cellNum = 'Bc1';
 cellName = strcat(cellDate,cellNum);
 
 loadDate = char(cellDate);
@@ -82,7 +82,7 @@ dataType = 1;
 clear epochStorage
 saveFlag = 0;
 count =0;
-maxFreq = 25; %at least 1 has 22 randomly ... maybe others?
+maxFreq = 30; %at least 1 has 22 randomly ... maybe others?
 
 controlOrAlt = 'Control';
 % controlOrAlt = 'AltCenter';
@@ -378,9 +378,12 @@ controlOrAlt =  "Control";
 % controlOrAlt =  "Wholecell_exc";
 % controlOrAlt =  "AltCenter";
 
+temporalStimType = 'sinewave';
+
+
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD =6;
+desiredSTD =4.5;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -410,8 +413,8 @@ for i = 1:length(epochs)
 %    if strcmp(displayName,' Fspot') 
    if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,controlOrAlt)
     temporalClass = epochs(i).meta.temporalClass;
-%     if strcmp(temporalClass,'sinewave')
-       if strcmp(temporalClass,'pulse') 
+    if strcmp(temporalClass,temporalStimType)
+%        if strcmp(temporalClass,'pulse') 
         count = count + 1;
         for s = 1:length(splitFactors)
             if ischar(getfield(epochs(i).meta,splitFactors(s)))
@@ -459,8 +462,8 @@ currType=[];
 %    if strcmp(displayName,' Fspot') 
    if strcmp(displayName,'S MT Fspot') && strcmp(currWanted,currType)
     temporalClass = epochs(i).meta.temporalClass;
-    if strcmp(temporalClass,'sinewave')
-%        if strcmp(temporalClass,'pulse')
+%     if strcmp(temporalClass,'sinewave')
+       if strcmp(temporalClass,temporalStimType)
         count = count + 1;
         for s = 1:length(splitFactors)
             if ischar(getfield(epochs(i).meta,splitFactors(s)))
@@ -575,8 +578,11 @@ params.dataType = dataType;
 params.cellName= cellName;
 % saveGraph = 0;
 % stimName = 'Grating';
-% freqAnalysis(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+if strcmp(temporalStimType,'sinewave')
+freqAnalysis(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+else
 simpleSpots(spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
+end
 %% 
 plot(excitation(13,:))
 hold on
@@ -594,7 +600,7 @@ meanOnCurrents = mean(diffCurrents(:,10001:15000),2);
 meanOnCurrents(1)=0;
 plot(unique([splitCell{2,6}]'),meanOnCurrents)
 %% Bar centering 
-desiredSTD = 5;
+desiredSTD =4;
 countx = 0;
 county = 0;
 clear epochStorage;
@@ -688,21 +694,21 @@ timings = [preTime stimOrig tailTime];
 centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,sampleRate)
 %% Simple Response (Color spot and OMS)
 dataType = 1; 
-desiredSTD = 5;
+desiredSTD = 8;
 % % 
-splitFactors = ["stimulusClass"];
+% splitFactors = ["stimulusClass"];
 % splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["stimulusIndex"];
-% splitFactors = ["outerRadius","chromaticClass","contrast"];
+splitFactors = ["outerRadius","chromaticClass","contrast"];
 % splitFactors = ["chromaticClass"];
 % splitFactors = ["led"];
 % splitFactors = ["backgroundIntensity","spotIntensity"];
 % %
 % protocolID = "Doves Movie";
-protocolID = "Object Motion Grating";
+% protocolID = "Object Motion Grating";
 % protocolID = "Object Motion Dots";
 % protocolID = "Single Spot";
-% protocolID = "Chromatic Spot";
+protocolID = "Chromatic Spot";
 % protocolID = "Led Pulse";
 splitCell = cell(2,length(splitFactors));
 
@@ -710,7 +716,7 @@ splitCell = cell(2,length(splitFactors));
 for g = 1:size(splitCell,2)
     splitCell{1,g} = splitFactors(g);
 end
-
+% 
 controlOrAlt = "Control";
 % controlOrAlt = "Whole cell_exc";
 % controlOrAlt = "rf annuli";
@@ -811,7 +817,7 @@ elseif size(splitCell,2)>1
 else
     subtractSorter = 0;    
 end
-subtractSorter=0;
+subtractSorter=1;
 for o = 1:size(splitCell,2) - subtractSorter %-1 because last parameter split is x val
     for p = 1:size(splitCell{2,1},2)
         allSets(p,o) = splitCell{2,o}(1,p);       
@@ -917,7 +923,7 @@ for a = 1:length(whatColors)
            end
 %            subplot(length(whatRadii),length(whatColors),b*a) %if for some reason more than just S- vs LM-
             figure(23)
-            subplot(length(whatRadii),length(whatColors),(a+((b-1)*3))) 
+            subplot(length(whatRadii),length(whatColors),(a+((b-1)*2))) 
            
            plot(mean(psthMatrix([indexHolder{2,finalConditional}],:))')
            title(indexHolder{1,finalConditional})
@@ -967,7 +973,7 @@ splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"];
 
 runSplitter = ["currentSpotSize"];
 
-leakThreshold = 100;
+leakThreshold = 200;
 
 desiredSTD =4;
 % 
@@ -1395,19 +1401,19 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 dataType = 1; %0 if currents
 currAnalysis = 'excitation';
 % currAnalysis = 'inhibition';
-splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
-% splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
+% splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
+splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
 
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
 subtractBGrate=1;
 
-desiredSTD =4;
+desiredSTD =5;
 % 
-protocolType = 'Oriented Bars';
+% protocolType = 'Oriented Bars';
 % protocolType = 'Oriented Bars Fixed';
-% protocolType = 'Chromatic Bars';
+protocolType = 'Chromatic Bars';
 
 splitCell = cell(2,length(splitFactors));
 
@@ -1598,7 +1604,7 @@ splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation
 leakC = 100;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 4;
+desiredSTD = 3;
 
 if colorBar
     desiredProtocol = 'Moving Chromatic Bar';
@@ -1756,9 +1762,9 @@ params.saveGraph =0;
 %grating,bars
 params.stimName = 'moving bar';
 params.saveIter = 1;
-params.Region = 7500:11000;
+% params.Region = 7500:11000;
 % params.Region = 13000:17000;
-% params.Region = 1:35000;
+params.Region = 1:35000;
 timings = [preTime stimOrig tailTime];
 dataToAlign = orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% plottin' code
