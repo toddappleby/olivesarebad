@@ -40,9 +40,11 @@ for i = 1:length(epochs)
    recordingTechnique = epochs(i).meta.recordingTechnique;
    egLabel = epochs(i).meta.epochGroupLabel;
      if strcmp(egLabel,'motion and noise')
-egCompare = 'motion and noise';
+         egCompare = 'motion and noise';
+     elseif strcmp(egLabel, 'AltCenter')
+         egCompare = 'AltCener';
      else
-egCompare = 'Control';
+         egCompare = 'Control';
    end
 % egCompare = 'AltCenter';
 if strcmp(displayName,protocolID) && strcmp(egLabel,egCompare) && ~strcmp(recordingTechnique,'whole-cell')
