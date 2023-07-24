@@ -1,7 +1,7 @@
 %% load FT first, give different name --- #1
 % cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1107') %2019 1107 bc7 sbc
-cellDate = '2019_0927';
-cellNum = 'Bc1';
+cellDate = '2022_0330';
+cellNum = 'Ac1';
 cellName = strcat(cellDate,cellNum);
 
 loadDate = char(cellDate);
@@ -76,6 +76,7 @@ timings = [preTime stimOrig tailTime];
 % saveStuff.ONParasolC = ONParasolC;
 
 logi = contrast == .05;
+logi2 = contrast == .2;
 [cSensitivity, ~, ~] = frequencyModulation(mean(psthMatrix(logi,5001:end ),1), 10000, 4, 'avg', 1, []);
 %% chirp regurgitation
 dataType = 1;
@@ -378,12 +379,12 @@ controlOrAlt =  "Control";
 % controlOrAlt =  "Wholecell_exc";
 % controlOrAlt =  "AltCenter";
 
-temporalStimType = 'sinewave';
+temporalStimType = 'pulse';
 
 
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD =4.5;
+desiredSTD =6;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -392,7 +393,7 @@ end
 count = 0;
 clear epochStorage 
 
-stringComparer = [];
+stringComparer = []; 
 stringComparer = string(stringComparer);
 if dataType ==1
 for i = 1:length(epochs)
@@ -600,7 +601,7 @@ meanOnCurrents = mean(diffCurrents(:,10001:15000),2);
 meanOnCurrents(1)=0;
 plot(unique([splitCell{2,6}]'),meanOnCurrents)
 %% Bar centering 
-desiredSTD =4;
+desiredSTD =6;
 countx = 0;
 county = 0;
 clear epochStorage;
@@ -696,19 +697,19 @@ centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,s
 dataType = 1; 
 desiredSTD = 8;
 % % 
-% splitFactors = ["stimulusClass"];
+splitFactors = ["stimulusClass"];
 % splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["stimulusIndex"];
-splitFactors = ["outerRadius","chromaticClass","contrast"];
+% splitFactors = ["outerRadius","chromaticClass","contrast"];
 % splitFactors = ["chromaticClass"];
 % splitFactors = ["led"];
 % splitFactors = ["backgroundIntensity","spotIntensity"];
 % %
 % protocolID = "Doves Movie";
-% protocolID = "Object Motion Grating";
+protocolID = "Object Motion Texture";
 % protocolID = "Object Motion Dots";
 % protocolID = "Single Spot";
-protocolID = "Chromatic Spot";
+% protocolID = "Chromatic Spot";
 % protocolID = "Led Pulse";
 splitCell = cell(2,length(splitFactors));
 
@@ -817,7 +818,7 @@ elseif size(splitCell,2)>1
 else
     subtractSorter = 0;    
 end
-subtractSorter=1;
+subtractSorter=0;
 for o = 1:size(splitCell,2) - subtractSorter %-1 because last parameter split is x val
     for p = 1:size(splitCell{2,1},2)
         allSets(p,o) = splitCell{2,o}(1,p);       
@@ -975,7 +976,7 @@ runSplitter = ["currentSpotSize"];
 
 leakThreshold = 200;
 
-desiredSTD =4;
+desiredSTD =2;
 % 
 splitCell = cell(2,length(splitFactors));
 
@@ -1401,8 +1402,8 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 dataType = 1; %0 if currents
 currAnalysis = 'excitation';
 % currAnalysis = 'inhibition';
-% splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
-splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
+splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
+% splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
 
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
@@ -1410,10 +1411,10 @@ splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","ori
 subtractBGrate=1;
 
 desiredSTD =5;
-% 
-% protocolType = 'Oriented Bars';
+
+protocolType = 'Oriented Bars';
 % protocolType = 'Oriented Bars Fixed';
-protocolType = 'Chromatic Bars';
+% protocolType = 'Chromatic Bars';
 
 splitCell = cell(2,length(splitFactors));
 
@@ -1604,7 +1605,7 @@ splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation
 leakC = 100;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 3;
+desiredSTD = 9;
 
 if colorBar
     desiredProtocol = 'Moving Chromatic Bar';
@@ -1762,9 +1763,9 @@ params.saveGraph =0;
 %grating,bars
 params.stimName = 'moving bar';
 params.saveIter = 1;
-% params.Region = 7500:11000;
+params.Region = 5000:10000;
 % params.Region = 13000:17000;
-params.Region = 1:35000;
+% params.Region = 1:35000;
 timings = [preTime stimOrig tailTime];
 dataToAlign = orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% plottin' code

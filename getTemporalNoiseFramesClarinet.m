@@ -40,9 +40,9 @@ for k = 1 : length(seedList)
    
     fSeq = noiseContrast * fSeq;
     
-%     if frameDwell(k) > 1
-%     fSeq = ones(frameDwell(k),1)*fSeq(:)';
-%     end
+    if frameDwell(k) > 1
+    fSeq = ones(frameDwell(k),1)*fSeq(:)';
+    end
     
     fSeq(fSeq > 1) = 1;
     fSeq(fSeq < -1) = -1;

@@ -32,9 +32,10 @@ spikeMeans = cell(13,size(folderSet,3));
 %   1:size(folderSet,3)
 count=0;
 createSharableFormat = 1;
-
+% includeTypes =[13 12 8 7];
+includeTypes = 3;
 %
-for c = [13 12 8 7 3]
+for c = includeTypes
  
     cd(strcat(typesFolder,folderSet(:,:,c))) 
     
@@ -106,7 +107,7 @@ gainRSE = [];
 %             matrixSplit = reshape([indexHolder{1,:}],[6,length(indexHolder)])';
             matrixSplit = vertcat(indexHolder{1,:});
             
-           if strcmp(cellType,'OFFParasol') 
+           if strcmp(cellType,'ParasolOFF') 
              switch cellName
                  case '20200108Bc1_MN.mat'
                     logicalMatrix = contains(matrixSplit,["gaussian", "Control", "250", "90", "stationary","sequential","random"]);
@@ -143,10 +144,10 @@ gainRSE = [];
              end
            end
            
-           if strcmp(cellType,'ONSmooth') 
+           if strcmp(cellType,'SmoothON') 
              switch cellName
-                 case '20190927Bc1_MN.mat'
-                    logicalMatrix = contains(matrixSplit,["gaussian", "Control", "300", "90", "stationary","sequential","random"]);
+                 case '20200615Bc1_MN.mat' 
+                    logicalMatrix = contains(matrixSplit,["gaussian", "Control", "375", "90", "stationary","sequential","random"]);
                     outI = [find(sum(logicalMatrix,2)==5)];
                  case '20200630Ac1_MN.mat'
                     logicalMatrix = contains(matrixSplit,["gaussian", "motion and noise", "180", "stationary","sequential","random"]);
@@ -154,6 +155,9 @@ gainRSE = [];
                  case '20210122Ac1_MN.mat'
                     logicalMatrix = contains(matrixSplit,["gaussian", "Control", "450", "180", "stationary","sequential","random"]);
                     outI = [find(sum(logicalMatrix,2)==5)];      
+                 case '20230320Ac5_MN.mat'
+                    logicalMatrix = contains(matrixSplit,["gaussian", "Control", "375", "180", "stationary","sequential","random"]);
+                    outI = [find(sum(logicalMatrix,2)==5)];    
              end
            end
            
@@ -208,11 +212,12 @@ gainRSE = [];
                 noiseVars.type = indexHolder{1,outI(f)}(1);
 
                 frames = manookinlab.ovation.getFrameTimesFromMonitor(frameTimings(indices+size(spikingData,1),:), metaData.sampleRate, binRate);
-%           if strcmp(cellType,'BroadThorny')
-%                 frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,2,seed(indices),frameDwell);
-%           else
+          if strcmp(cellType,'BroadThorny') && strcmp(cellName,'20230613Bc5_MN.mat') || strcmp(cellName,'20200713Bc3_MN.mat')
+              cellName
+                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,4,seed(indices),frameDwell);
+          else
                 frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,2,seed(indices),frameDwell);
-%           end
+          end
                 response = zeros(size(indices,1),metaData.stimTime+metaData.tailTime);
                 for ff = 1:length(indices)
                     response(ff,:) = binSpikeCount(spikingData(indices(ff),prePts+1:end), binRate, metaData.sampleRate);
@@ -259,8 +264,8 @@ lfilter = mean(lfilter,1); %without mean filter, NLs sometimes look different
                 
                 
                 frames = manookinlab.ovation.getFrameTimesFromMonitor(frameTimings(indices+size(spikingData,1),:), metaData.sampleRate, binRate);
-          if strcmp(cellType,'BroadThorny')
-                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,2,seed(indices),frameDwell);
+          if strcmp(cellType,'BroadThorny') && strcmp(cellName,'20230613Bc5_MN.mat') || strcmp(cellName,'20200713Bc3_MN.mat')
+                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,4,seed(indices),frameDwell);
           else
                 frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,2,seed(indices),frameDwell);
           end                
@@ -281,7 +286,7 @@ lfilter = mean(lfilter,1); %without mean filter, NLs sometimes look different
                     P(p,:) = real(tmp);
                     P(p,:) = P(p,:)./std(P(p,:));
                 end
-                [xBin(g,:),yBin(g,:)] = binNonlinearity(P(:,stimIndex(501:end)),R(:,stimIndex(501:end)),nonlinearityBins);
+                [xBin(g,:),yBin(g,:)] = binNonlinearity(P(:,stimIndex(:)),R(:,stimIndex(:)),nonlinearityBins);
                 
 classLabels = {'random', 'motion', 'stationary'};
 responseSet{1,g} = classLabels{g};                 
@@ -321,24 +326,24 @@ responseSet{2,g} = response;
     save(strcat(cellType,'_',cellName(1:11),'_MN_Sharable.mat'),'analysisParams','stimulusParams')
    end
 
-            %mean of stimulus from each cycle
+%             mean of stimulus from each cycle
 %                 figure(45)    
 %       plot(lfilter(1:1000))      
 %       figure(46)
 %       plot(xBin',yBin')
       
-%LF and NL subplot for each cell of each type
-% figure(100)
-% subplot(ceil(size(fileIndex,3)/2),2,d)
-% 
-% plot(xBin(1,:),yBin(1,:),'b');hold on;plot(xBin(2,:),yBin(2,:),'r');plot(xBin(3,:),yBin(3,:),'k')
-% title(cellName(1:11))
-% 
-% figure(99)
-% subplot(ceil(size(fileIndex,3)/2),2,d)
-% 
-% plot(lf(1:650))
-% title(cellName(1:11))
+% LF and NL subplot for each cell of each type
+figure(100)
+subplot(ceil(size(fileIndex,3)/2),2,d)
+
+plot(xBin(1,:),yBin(1,:),'b');hold on;plot(xBin(2,:),yBin(2,:),'r');plot(xBin(3,:),yBin(3,:),'k')
+title(cellName(1:11))
+
+figure(99)
+subplot(ceil(size(fileIndex,3)/2),2,d)
+
+plot(lf(1:650))
+title(cellName(1:11))
             
              
             
@@ -527,8 +532,8 @@ staticMeanLast5(d) = mean(mean(sum(spikingData(staticIndex,50000:100000),2),2));
               
               %gain
                 % gain all
-              mParams = fitMultiVarParams(xBin',yBin',0,starterParams);
-              outNLGain = multiGainNL(mParams,xBin');
+              mParams = fitMultiVarParams(xBin,yBin,0,starterParams);
+              outNLGain = multiGainNL(mParams,xBin);
               gainRSE(d,:) = [mParams(3), mParams(4), mParams(5)];
               
 %               figure(21)
@@ -697,7 +702,7 @@ figure
 changeY = [seqChange' randChange']
 changeX = [seqX' seqX'+.2]
 plot(changeX, changeY,'.')
-axis([.5 1.7 -40 40])
+axis([.5 1.7 -50 100])
 line([seqX(1)' seqX(1)'+.2],[seqChange(1:end)' randChange(1:end)'])
 line([seqX(1)' seqX(1)'+.2],[mean(seqChange) mean(randChange)],'LineWidth',3)
 makeAxisStruct(gca,strtrim(['changeDataLINES' folderSet(:,:,c)]))

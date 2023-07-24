@@ -1,8 +1,8 @@
 %% Spatial  Noise
 
 exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\';
-experimentDate = '2023_0607';
-cellNum = 'Ac3';
+experimentDate = '2023_0613';
+cellNum = 'Ac2';
 cd(strcat(exportDirectory,experimentDate))
 
 cd(strcat(exportDirectory,experimentDate)) 

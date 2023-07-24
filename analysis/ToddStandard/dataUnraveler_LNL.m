@@ -1,7 +1,7 @@
 %% CHOOSE CELL TO LOAD
 exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\'; %new PC 
-experimentDate = '2023_0607';
-cellNum = 'Ac3';
+experimentDate = '2023_0613';
+cellNum = 'Bc5_Fred';
 cd(strcat(exportDirectory,experimentDate)) 
 %20210910Fc1
 %% LOAD AND GRAB CRITICAL ELEMENTS
@@ -87,7 +87,7 @@ metaData = cellData(dNameLogical); %grab only protocol data
             
 %% Grab Spikes, 
 
-desiredSTD = 4; %standard deviation used to detect spikes
+desiredSTD =2.7; %standard deviation used to detect spikes
 
 for k = 1:length(rawData)
     
@@ -97,10 +97,13 @@ for k = 1:length(rawData)
               disp('deleted epoch')
           else             
         spikeMatrixUnbinned(k,:) = spikes;
-        spikes = binSpikeCount(spikes, binRate, sampleRate);
+         spikes = binSpikeCount(spikes(:,:), binRate, sampleRate);
+%          spikes = BinSpikeRate(spikes/binRate, binRate, sampleRate);
+
         spikes = spikes';
         spikeMatrix(k,:) = spikes;
-        psthMatrix(k,:) = psth(spikeMatrix(k,:)*binRate,6+2/3,binRate,1);
+        psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,binRate,1);
+%         psthMatrix(k,:) = psth(spikeMatrix(k,:),6+2/3,sampleRate,1);
           end
 end
 
@@ -139,8 +142,8 @@ plot(y)
 binaryIndex = contains(noiseClass,'binary')';
 gaussianIndex = contains(noiseClass,'gaussian')';
 % 
-gaussianOrBinary = 'gaussian'; %choose your fighter
-% gaussianOrBinary = 'binary';
+% gaussianOrBinary = 'gaussian'; %choose your fighter
+gaussianOrBinary = 'binary';
 
 egLabelCompare = "Control";
 % egLabelCompare = "AltCenter";
@@ -150,8 +153,8 @@ egLabelCompare = "Control";
 noiseSplitter = strcmp(gaussianOrBinary,noiseClass);
 egSplitter = strcmp(egLabelCompare,epochLabel);
 splitter2 = 90;
-splitter3 = 350;
-splitter4 = 1;
+splitter3 = 175;
+splitter4 = 2;
 splitter5 = 1;
 
     %typical sorters
@@ -222,20 +225,25 @@ subplot(3,1,3)
     
 % makeAxisStruct(gca,strtrim(['psthMeans' experimentDate cellNum]))
 
-frequencyStrip=seqMean; %freqs contained in response
+frequencyStrip= [seqMean; randMean; staticMean]; %freqs contained in response
 
+colorRow = ['r','b','k'];
+for g = 1:3
 fs=10000; %sampling frequency
 L=length(frequencyStrip);
 NFFT = 100000;
-X = fftshift(fft(frequencyStrip,NFFT));
+X = fftshift(fft(frequencyStrip(g,:),NFFT));
 Pxx=X.*conj(X)/(NFFT*NFFT); 
 f = fs*(-NFFT/2:NFFT/2-1)/NFFT; %Frequency Vector
 figure(10)
-plot(f,abs(X)/(L),'r');
+
+subplot(3,1,g)
+plot(f,abs(X)/(L),colorRow(g));
 title('Magnitude of FFT');
 xlabel('Frequency (Hz)')
 ylabel('Magnitude |X(f)|');
 xlim([0 100])
+end
 % makeAxisStruct(gca,strtrim(['powerSpectrum' experimentDate cellNum]))
 
 % X = fft(frequencyStrip,NFFT);
@@ -260,7 +268,7 @@ noiseVars.type = gaussianOrBinary;
 noiseVars.contrast = 0.3333;
 timings = [250,10000,250]; % AUTOMATE THIS LATER
 frames = manookinlab.ovation.getFrameTimesFromMonitor(frameTimings(usableIndex,:), 10000, binRate);
-frameValues = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,2,double(string(seedList(usableIndex)))',frameDwell(usableIndex));
+frameValues = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,4,double(string(seedList(usableIndex)))',frameDwell(usableIndex));
 
 %% Generate Filter & NL (incl. modeled curves)
 % 
@@ -270,6 +278,7 @@ lfilter=[];
 nonlinearityBins=100;
    stimDuration = preTime + (1 : stimTime);     
 for f = 1:3      
+%     stimulus = frameValues(bgClassX==f, preTime+11:end);
     stimulus = frameValues(bgClassX==f, :);
     responses = response(bgClassX==f, :);
 
@@ -298,6 +307,7 @@ for g = 1:3
     
     % nl starts here
     Stim = frameValues(bgClassX==g,:);
+%     Stim = frameValues(bgClassX==g,preTime+11:end);
     Resp = response(bgClassX==g,:);
     lf = lfilter(1 : size(Stim,2));
     Pred = zeros(size(Resp));
@@ -308,7 +318,7 @@ for g = 1:3
             Pred(p,:) = Pred(p,:)./std(Pred(p,:));
         end
     [xBin(g,:),yBin(g,:)] = binNonlinearity(Pred(:,stimDuration(501:end)),Resp(:,stimDuration(501:end)),nonlinearityBins);
-%  [xBin(f,:),yBin(f,:)] = binNonlinearity(Pred(:,stimDuration(:)),Resp(:,stimDuration(:)),nonlinearityBins);
+%  [xBin(f,:),yBin(f,:)] = binNonlinearity(Pred(:,stimDuration(1500:end)),Resp(:,stimDuration(1500:end)),nonlinearityBins);
 
     figure(1)
 nlParams(g,:) = fitNonlinearityParams(xBin(g,:), yBin(g,:));

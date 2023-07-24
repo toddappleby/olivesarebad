@@ -6,7 +6,7 @@
 %probably should contain protocol and celltype along with date & cell num
 %% setup
 % exportFolder = '/Users/toddappleby/Documents/Data/Clarinet Exports/'
-exportFolder = '/Users/reals/Documents/PhD 2021/ClarinetExports/'
+exportFolder = getDirectory()
 cd(exportFolder)
 dataDir = dir;
 %figure out which folders start with 2! (data folders), then create array of
@@ -87,25 +87,27 @@ end
 
 
 %% ok, NOW we parse spikes
-%
-for b = 45:length(cellList)
-    cellName = char(cellList(b));
+% for individual inserts that don't fit naming convention (eg. data from
+% Fred), manually create cellName string w/ appropriate names after running above code. 
+for b = [1]
+    cellName = char(cellList(b))
+
     
     %date (year/month/day) by naming convention 
     cellYear = cellName(1:4);
     cellDate = cellName(5:8);
-    cellName = strcat(cellName(1:11),'_FT','.mat');
+    cellName = strcat(cellName(1:11),'_Fred_FT','.mat');
     load(strcat(exportFolder,cellYear,'_',cellDate,'/',cellName)) %for m and n 
     frameTs=epochs;
     load(strcat(exportFolder,cellYear,'_',cellDate,'/',char(cellList(b))))
     
     
-[splitCell,indexHolder,spikingData,frameTimings,metaData,seed] = makeData(epochs,frameTs,protocolToOpen,splitFactors,5,recordingType,parseNewData);
+[splitCell,indexHolder,spikingData,frameTimings,metaData,seed] = makeData(epochs,frameTs,protocolToOpen,splitFactors,2.7,recordingType,parseNewData);
     
 %     [splitCell,indexHolder,spikingData,~,metaData,~] = makeData(epochs,[],protocolToOpen,splitFactors,6,recordingType,parseNewData);
     
-save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','metaData')
-% save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','metaData')
+% save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','metaData')
+save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','seed','frameTimings','metaData') %FOR MN
 % save(strcat(cellName(1:11),'_',saveLabel),'seed','frameTimings','splitCell','indexHolder','-append') %index fix haha oops (no spikes)
 end
 
