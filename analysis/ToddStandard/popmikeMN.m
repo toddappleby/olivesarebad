@@ -20,14 +20,21 @@ cellnameList = [];
 errorGroups = [];
 
 binRate = 1e3;
-
+tFilterMeanData=[];
 count=0;
     
     cellTypeData = [];
     typeInd = 1; 
 % size(folderSet,3)
-% includeTypes = [5 3 2 4 1];
-includeTypes = [4 2];
+includeTypes = [5 3 2 4 1];
+% includeTypes = [5];
+maxFilterPerCell=[];
+minFilterPerCell=[];
+timeBetweenPeaksPerCell = [];
+peakToPeakMagPerCell = [];
+inflectionPointPerCell = [];
+startEndDeltaPerCell = [];
+initialSlopePerCell = [];
 for c = includeTypes
     
     cd(strcat(typesFolder,folderSet(:,:,c))) 
@@ -53,6 +60,16 @@ for c = includeTypes
     
     mseErrorHz = [];
     mseErrorGain = [];
+    
+    maxFilter = [];
+    minFilter = [];
+    timeBetweenPeaks= [];
+    peakToPeakMag = []; 
+    inflectionPoint = [];
+    startEndDelta = [];
+    initialSlope = [];
+    
+
     
         for d = 1:size(fileIndex,3)
            
@@ -121,23 +138,56 @@ yBin(3,:)=analysisParams.yBin(3,:);
     
 end
 
-%%% for TF gazing
+% % % %% for TF gazing
 
 % figure(12)
 % subplot(2,ceil(size(fileIndex,3)/2),d)
 % plot(analysisParams.lfilter(1:500))
-% 
-% % % % %% for NL debuggin'
-% 
+
+lfilter=analysisParams.lfilter(1:500);
+
+indexForEnd = find(lfilter(:).*circshift(lfilter(:), [-1 0]) <= 0);
+indexForEnd = indexForEnd(indexForEnd >200);
+indexForStart = find(lfilter(:).*circshift(lfilter(:), [-1 0]) <= 0);
+indexForStart = indexForStart(indexForStart<20);
+
+if isempty(indexForStart)
+    indexForStart = 1;
+end
+
+if isempty(indexForEnd)
+    indexForEnd = 0;
+end
+
+
+maxFilter(d) = max(lfilter);
+minFilter(d) = min(lfilter);
+timeBetweenPeaks(d) = abs(find(lfilter==maxFilter(d)) - find(lfilter==minFilter(d)));
+peakToPeakMag(d) = maxFilter(d) + abs(minFilter(d)); 
+startEndDelta(d) = indexForEnd(1) - indexForStart(end);
+if startEndDelta(d) < 0
+    startEndDelta(d) = [];
+end
+initialSlope(d) = ((lfilter(find(diff(lfilter)==max(diff(lfilter)))+1)-lfilter(find(diff(lfilter)==max(diff(lfilter)))-1)))/2; %rise/run
+
+
+[S, L] = bounds(diff(lfilter));
+if find(diff(lfilter)==S) > find(diff(lfilter)==L)
+    inflectionPoint(d)= lfilter(find(diff(lfilter)==S)); 
+else
+    inflectionPoint(d)= lfilter(find(diff(lfilter)==L));
+end
+
+
+% % % %% for NL debuggin'
+
 %   figure(13)
 %   colororder({'b','r','k'})
 %   subplot(2,ceil(size(fileIndex,3)/2),d)
 %   plot(xBin',yBin')
-%   
+  
 % 
-% yBin(1,xBin(1,:)<0)=0;
-% yBin(2,xBin(2,:)<0)=0;
-% yBin(3,xBin(3,:)<0)=0;
+
 
 %%%%%% get spike rates
 
@@ -206,7 +256,7 @@ multiCellStatic(d) = meanStatic;
                 plot(xBin(2,1:50),yBin(2,1:50))
                 hold on
                 plot(xBin(2,1:50),outNLGainOff(2,:))
-                pause
+                
                  
               else
 
@@ -266,6 +316,24 @@ multiCellStatic(d) = meanStatic;
 %        ylabel('Percent Change Horizontal Shift Parameter')
 %        title('Change in X Shift Parameter in NL Models for Motion & Random Conditions')
 
+%%% temporal filter means
+
+%maxFilter,minFilter,timeBetweenPeaks,peakToPeakMag
+
+
+
+maxFilterPerCell = [maxFilterPerCell mean(maxFilter)];
+minFilterPerCell = [minFilterPerCell mean(minFilter)];
+timeBetweenPeaksPerCell = [timeBetweenPeaksPerCell mean(timeBetweenPeaks)];
+peakToPeakMagPerCell = [peakToPeakMagPerCell mean(peakToPeakMag)];
+inflectionPointPerCell = [inflectionPointPerCell mean(inflectionPoint)];
+startEndDeltaPerCell = [startEndDeltaPerCell mean(startEndDelta)];
+initialSlopePerCell = [initialSlopePerCell mean(initialSlope)];
+
+
+
+
+
 count = count+1;
 
 seqChange=[];
@@ -276,15 +344,16 @@ randChange = 100*(multiCellRand-multiCellStatic)./multiCellStatic;
 seqX = ones(1,length(multiCellSeq))*count;
 figure(11);hold on
 % seqX=seqX+1;
-changeY = [seqChange' randChange']
-changeX = [seqX' seqX'+.2]
+changeY = [seqChange' randChange'];
+changeX = [seqX' seqX'+.2];
 plot(changeX, changeY,'.')
 axis([.5 5.5 -50 120])
 line([count' count'+.2],[seqChange(1:end)' randChange(1:end)'])
 line([count' count'+.2],[mean(seqChange) mean(randChange)],'LineWidth',3)
 % makeAxisStruct(gca,strtrim(['changeDataMikeLINES' 'offSmooth']))
 
-       
+errorSequential(c) = sem(seqChange);
+errorRandom(c) = sem(randChange);
 %         cellType = fileIndex(:,1:10,1);
 
 
@@ -292,8 +361,8 @@ line([count' count'+.2],[mean(seqChange) mean(randChange)],'LineWidth',3)
 %%%%%%%%%%%%%%%%%%% UNITY LINE GRAPHS
 mseErrorHzMean = mean(mseErrorHz);
 mseErrorGainMean = mean(mseErrorGain);
-% colorSet = ['b.'; 'r.'];
-% colorSet2 = ['b*'; 'r*'];
+colorSet = ['b.'; 'r.'];
+colorSet2 = ['b*'; 'r*'];
 
 figure(98)
 dotSize = 500;
@@ -387,6 +456,45 @@ axis([0 10 0 10])
 
 
 end
+
+tFilterMeanData{1,1} = 'Filter Metric';
+tFilterMeanData{2,1} = 'Metric Mean Per Type';
+tFilterMeanData{1,2} = 'Max Filter';
+tFilterMeanData{2,2} = maxFilterPerCell;
+tFilterMeanData{1,3} = 'Min Filter';
+tFilterMeanData{2,3} = minFilterPerCell;
+tFilterMeanData{1,4} = 'Time Between Peaks';
+tFilterMeanData{2,4} = timeBetweenPeaksPerCell;
+tFilterMeanData{1,5} = 'Peak to Peak Mag';
+tFilterMeanData{2,5} = peakToPeakMagPerCell;
+tFilterMeanData{1,6} = 'Start to End Delta';
+tFilterMeanData{2,6} = startEndDeltaPerCell;
+tFilterMeanData{1,7} = 'Initial Slope';
+tFilterMeanData{2,7} = initialSlopePerCell; %broken
+
+
+
+% 
+% tFilterMeanData{1,c+1} 
+% 
+% tFilterMeanData{1,c+1} = cellType;
+% tFilterMeanData{2,c+1} = [mean(maxFilter) mean(minFilter) mean(timeBetweenPeaks) mean(peakToPeakMag) mean(inflectionPoint)];
+% tFilterMeanData{3,c+1} = [sem(maxFilter) sem(minFilter) sem(timeBetweenPeaks) sem(peakToPeakMag) sem(inflectionPoint)];
+% 
+% tFilterMeanData{4,2} = ['Filter Max ', 'Filter Min ',];
+% tFilterMeanData{4,3} = [' Time Between Peaks', ' Peak to Peak Mag'];
+% tFilterMeanData{4,4} = ['Inflection Point'];
+% 
+% maxFilterMeanCollection = [tFilterMeanData{2,2:end}];
+% 
+% minFilterMeanCollection = maxFilterMeanCollection(1,[2 7 12 17 22]);
+% deltaPeaks = maxFilterMeanCollection(1,[3 8 13 18 23]);
+% peaktoPeakMag = maxFilterMeanCollection(1,[4 9 14 19 24]);
+% inflectionPointMean = maxFilterMeanCollection(1,[5 10 15 20 25]);
+% maxFilterMeanCollection = maxFilterMeanCollection(1,[1 6 11 16 21]);
+
+
+
 figure(29)
 hzFig = gca;
 hzFig.XTick =[1.2 2.2 3.2 4.2 5.2];

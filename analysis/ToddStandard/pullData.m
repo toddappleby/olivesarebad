@@ -14,7 +14,7 @@ dataDir = dir;
 folderSet = char(string({dataDir.name}));
 folderIndex = folderSet(:,1:9,folderSet(:,1,:) == '2');% logical index in 3rd dim, 1:9 deletes spaces that formed for some reason at end of folder name after converting to char array
 
-protocolToFind = "Motion And Noise";
+protocolToFind = "Object Motion Texture";
 
 
 %%
@@ -65,19 +65,19 @@ cd(strcat('/Users/reals/Documents/PhD 2021/ClarinetExports/',protocolToFind))
 save(strcat(strtrim(protocolToFind),'.mat'),'cellList')
 %% and now we parse spikes // note: just load protocol mat file if doing corrections (don't run above section -- you can, but it's a time waste)
 parseNewData = 1; %this is set up BACKWARDS for code segment after this! fuck!
-protocolToOpen = 'Motion And Noise';
+protocolToOpen = 'Object Motion Texture';
 cd(strcat(exportFolder,protocolToOpen))
 load(strcat(protocolToOpen,'.mat'));
 recordingType = 'extracellular';
 % splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["maskDiameter","apertureDiameter","stimulusIndex"]; %DOVES
-splitFactors = ["noiseClass","epochGroupLabel","frameDwell","apertureRadius","barOrientation","backgroundClass"]; %MotionAndNoise 
+% splitFactors = ["noiseClass","epochGroupLabel","frameDwell","apertureRadius","barOrientation","backgroundClass"]; %MotionAndNoise 
 % splitFactors = ["spotIntensity","backgroundIntensity","currentSpotSize"]; %Exp Spots I guess
 % splitFactors = ["contrast","stimulusClass","temporalClass","radius"]; %smtf
-% splitFactors = ["stimulusClass"]; %OMS
+splitFactors = ["apertureRadius","stimulusClass"]; %OMS
 % splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 % 
-saveLabel = 'MN';
+saveLabel = 'OMSTexture';
 if parseNewData
     cellList = cellListFinal'; %parse only new cells 
 else
@@ -89,25 +89,25 @@ end
 %% ok, NOW we parse spikes
 % for individual inserts that don't fit naming convention (eg. data from
 % Fred), manually create cellName string w/ appropriate names after running above code. 
-for b = [1]
+for b = 11:length(cellList)
     cellName = char(cellList(b))
 
     
     %date (year/month/day) by naming convention 
     cellYear = cellName(1:4);
     cellDate = cellName(5:8);
-    cellName = strcat(cellName(1:11),'_Fred_FT','.mat');
-    load(strcat(exportFolder,cellYear,'_',cellDate,'/',cellName)) %for m and n 
-    frameTs=epochs;
+    cellName = strcat(cellName(1:11),'_FT','.mat');
+%     load(strcat(exportFolder,cellYear,'_',cellDate,'/',cellName)) %for m and n 
+%     frameTs=epochs;
     load(strcat(exportFolder,cellYear,'_',cellDate,'/',char(cellList(b))))
     
     
-[splitCell,indexHolder,spikingData,frameTimings,metaData,seed] = makeData(epochs,frameTs,protocolToOpen,splitFactors,2.7,recordingType,parseNewData);
+% [splitCell,indexHolder,spikingData,frameTimings,metaData,seed] = makeData(epochs,frameTs,protocolToOpen,splitFactors,4.5,recordingType,parseNewData);
     
-%     [splitCell,indexHolder,spikingData,~,metaData,~] = makeData(epochs,[],protocolToOpen,splitFactors,6,recordingType,parseNewData);
+    [splitCell,indexHolder,spikingData,~,metaData,~] = makeData(epochs,[],protocolToOpen,splitFactors,6,recordingType,parseNewData);
     
-% save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','metaData')
-save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','seed','frameTimings','metaData') %FOR MN
+save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','metaData')
+% save(strcat(cellName(1:11),'_',saveLabel),'splitCell','indexHolder','spikingData','seed','frameTimings','metaData') %FOR MN
 % save(strcat(cellName(1:11),'_',saveLabel),'seed','frameTimings','splitCell','indexHolder','-append') %index fix haha oops (no spikes)
 end
 

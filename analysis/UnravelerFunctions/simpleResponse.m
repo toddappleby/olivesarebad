@@ -59,7 +59,7 @@ for b = 1:size(indexHolder,2)
     xlabel('time (ms)');
     sgtitle(strcat([splitCell{1,1:size(splitCell,2)-1}]," ",indexHolder{1,b}));
     
-    figure(20+g)
+    figure(20+g+(b*3))
     plot(xvals,mean(psthMatrix(sortedIndex(finalInd),:),1));
     
 

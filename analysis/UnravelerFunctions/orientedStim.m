@@ -335,15 +335,62 @@ for a = 1:size(indexHolder,2)
         
             uniqueOrientations = unique(orientations); %because I don't know how to index the unique function
             finalInd = find(orientations==uniqueOrientations(u));
-            resp(u) = mean(sum(spikeMatrix(sortedIndex(finalInd),params.Region),2));
+            meanSpikeRate = sum(spikeMatrix(sortedIndex(finalInd),params.Region),2)/((max(params.Region)-min(params.Region))*1e-4);
+%             meanPSTH = max(psthMatrix(sortedIndex(finalInd),params.Region)-max(psthMatrix(sortedIndex(finalInd),1:timings(1)*10),[],2),0);
+            
+             
+            baselineSubtractedSpikeRate = meanSpikeRate - sum(spikeMatrix(sortedIndex(finalInd),1:timings(1)*10),2)/(timings(1)*1e-3);
+%                 resp(u) = sum(mean(meanPSTH)); %psth baseline subtracted
+%             resp(u)= mean(sum(spikeMatrix(sortedIndex(finalInd),params.Region),2))%spikerate no subtraction
+            resp(u)= mean(max(baselineSubtractedSpikeRate,0)); %spike rate baseline subtracted
             
             
             %plot traces
+            if size(indexHolder,2)>8 && a<=size(indexHolder,2)/2
+            psthData(u,:) = max(mean(psthMatrix(sortedIndex(finalInd),:),1) - max(mean(psthMatrix(sortedIndex(finalInd),1:5000),1)),0);
+                    
+                        
+            figure(99); hold on
+            subplot(1,ceil(size(indexHolder,2)/2),a)
+            plot(psthData(u,:)+(600*(u-1)))
+            line([min(params.Region) min(params.Region)],[0 600*u-1],'Color','r','LineStyle','--')
+            line([max(params.Region) max(params.Region)],[0 600*u-1],'Color','r','LineStyle','--')
+            
+            title(indexHolder{1,a})
+            
+            if a ==1 
+                text(350,590*(u-1), string(uniqueOrientations(u)))
+            end
+            
+            elseif size(indexHolder,2)>8 && a>size(indexHolder,2)/2
+            psthData(u,:) = max(mean(psthMatrix(sortedIndex(finalInd),:),1) - max(mean(psthMatrix(sortedIndex(finalInd),1:5000),1)),0);
+            figure(98); hold on
+            subplot(1,ceil(size(indexHolder,2)/2),a-floor((size(indexHolder,2)/2)))
+            
+            plot(psthData(u,:)+(600*(u-1)))
+            line([min(params.Region) min(params.Region)],[0 600*u-1],'Color','r','LineStyle','--')
+            line([max(params.Region) max(params.Region)],[0 600*u-1],'Color','r','LineStyle','--')
+            
+            title(indexHolder{1,a})  
+            
+             if a ==9 
+                text(350,590*(u-1), string(uniqueOrientations(u)))
+            end
+            else
             psthData(u,:) = mean(psthMatrix(sortedIndex(finalInd),:),1);
             figure(10); hold on
             subplot(1,size(indexHolder,2),a)
             plot(psthData(u,:)+(600*(u-1)))
+            
+            line([min(params.Region) min(params.Region)],[0 600*u-1],'Color','r','LineStyle','--')
+            line([max(params.Region) max(params.Region)],[0 600*u-1],'Color','r','LineStyle','--')
+            
             title(indexHolder{1,a})
+            
+             if a ==1 
+                text(350,590*(u-1), string(uniqueOrientations(u)))
+            end
+            end
             
 %             rawData(u,:) = mean(epochStorage(sortedIndex(finalInd),:),1);
 %             figure(11); hold on
@@ -351,11 +398,30 @@ for a = 1:size(indexHolder,2)
 %             plot(rawData(u,:)+(325*(u-1)))
 %             title(indexHolder{1,a})
 %             
-            spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
-            figure(12); hold on
-            subplot(1,size(indexHolder,2),a)
-            plot(spikeData(u,:)+(1*(u-1)))
-            title(indexHolder{1,a})
+%             if size(indexHolder,2)>8 && a<=8
+%             spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+%             figure(90); hold on
+%             subplot(1,size(indexHolder,2)/2,a)
+%             plot(spikeData(u,:)+(1*(u-1)))
+%             title(indexHolder{1,a})
+%              elseif size(indexHolder,2)>8 && a>8
+%             spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+%             figure(91); hold on
+%             subplot(1,size(indexHolder,2)/2,a-8)
+%             plot(spikeData(u,:)+(1*(u-1)))
+%             title(indexHolder{1,a})
+%             else
+%             spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+%             figure(12); hold on
+%             subplot(1,size(indexHolder,2),a)
+%             plot(spikeData(u,:)+(1*(u-1)))
+%             title(indexHolder{1,a})
+%             end
+%             spikeData(u,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+%             figure(12); hold on
+%             subplot(1,size(indexHolder,2),a)
+%             plot(spikeData(u,:)+(1*(u-1)))
+%             title(indexHolder{1,a})
 %             
     end
 

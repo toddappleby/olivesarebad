@@ -33,7 +33,7 @@ spikeMeans = cell(13,size(folderSet,3));
 count=0;
 createSharableFormat = 1;
 % includeTypes =[13 12 8 7];
-includeTypes = 3;
+includeTypes = 13;
 %
 for c = includeTypes
  
@@ -157,6 +157,9 @@ gainRSE = [];
                     outI = [find(sum(logicalMatrix,2)==5)];      
                  case '20230320Ac5_MN.mat'
                     logicalMatrix = contains(matrixSplit,["gaussian", "Control", "375", "180", "stationary","sequential","random"]);
+                    outI = [find(sum(logicalMatrix,2)==5)];    
+                 case '20230725Ac1_MN.mat'
+                    logicalMatrix = contains(matrixSplit,["gaussian", "Control", "275", "90", "stationary","sequential","random"]);
                     outI = [find(sum(logicalMatrix,2)==5)];    
              end
            end

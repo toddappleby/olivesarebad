@@ -1,6 +1,6 @@
 %% load FT first, give different name --- #1
 % cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1107') %2019 1107 bc7 sbc
-cellDate = '2022_0330';
+cellDate = '2023_0607';
 cellNum = 'Ac1';
 cellName = strcat(cellDate,cellNum);
 
@@ -377,14 +377,14 @@ runSplitter = ["radius"];
 controlOrAlt =  "Control";
 % controlOrAlt =  "NDF 4";
 % controlOrAlt =  "Wholecell_exc";
-% controlOrAlt =  "AltCenter";
+% controlOrAlt =  "AltCenter2";
 
 temporalStimType = 'pulse';
 
 
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD =6;
+desiredSTD =5;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -412,19 +412,30 @@ for i = 1:length(epochs)
    
 
 %    if strcmp(displayName,' Fspot') 
-   if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,controlOrAlt)
+%    if strcmp(displayName,'S MT Fspot Todd') && strcmp(egLabel,controlOrAlt)
+ if strcmp(displayName,'S MT Fspot') && strcmp(egLabel,controlOrAlt)
+       
     temporalClass = epochs(i).meta.temporalClass;
     if strcmp(temporalClass,temporalStimType)
 %        if strcmp(temporalClass,'pulse') 
         count = count + 1;
-        for s = 1:length(splitFactors)
-            if ischar(getfield(epochs(i).meta,splitFactors(s)))
-                splitCell{2,s} = [splitCell{2,s} string(getfield(epochs(i).meta,splitFactors(s)))];    
-            else
-                splitCell{2,s}= [splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
-            end
-        end
-        
+%         for s = 1:length(splitFactors)
+%             if ischar(getfield(epochs(i).meta,splitFactors(s)))
+%                 splitCell{2,s} = [splitCell{2,s} string(getfield(epochs(i).meta,splitFactors(s)))];    
+%             else
+%                 splitCell{2,s}= [splitCell{2,s} getfield(epochs(i).meta,splitFactors(s))];
+%             end
+%         end
+          for s=1:length(splitCell)  
+                  if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
+                      stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
+                  elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'char')
+                      stringedEntry = convertCharsToStrings(getfield(epochs(i).meta,splitFactors(s)));
+                  end
+               
+                    splitCell{2,s}=[splitCell{2,s} stringedEntry];
+          end
+   
       
         
 %         width(count) = epochs(i).meta.barWidth;
@@ -504,23 +515,24 @@ psthMatrix = zeros(size(epochStorage,1),size(epochStorage,2));
 
 
 
-for m = 1:size(splitCell,2)-1
-    if strcmp(class(splitCell{2,m}),'string')
-        uniqueStrings = unique(splitCell{2,m});
-        replacer = zeros(size(splitCell{2,m}));
-        
-        for n = 1:length(uniqueStrings)
-           strInd = find(splitCell{2,m}==uniqueStrings(n));
-           replacer(strInd) = n;
-        end
-%         holdList(:,m) = splitCell{2,m};
-        splitCell{2,m}=replacer;
-    end
-end
+% for m = 1:size(splitCell,2)-1
+%     if strcmp(class(splitCell{2,m}),'string')
+%         uniqueStrings = unique(splitCell{2,m});
+%         replacer = zeros(size(splitCell{2,m}));
+%         
+%         for n = 1:length(uniqueStrings)
+%            strInd = find(splitCell{2,m}==uniqueStrings(n));
+%            replacer(strInd) = n;
+%         end
+% %         holdList(:,m) = splitCell{2,m};
+%         splitCell{2,m}=replacer;
+%     end
+% end
     
 
 %SORT THIS SHIT BABY!!!!!!
-allSets=zeros(size(splitCell{2,1},2),size(splitCell,2)-1);
+
+allSets=strings(size(splitCell{2,1},2),size(splitCell,2)-1);
 
 for o = 1:size(splitCell,2)-1
     for p = 1:size(splitCell{2,1},2)
@@ -697,8 +709,8 @@ centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,s
 dataType = 1; 
 desiredSTD = 8;
 % % 
-splitFactors = ["stimulusClass"];
-% splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
+% splitFactors = ["apertureRadius","stimulusClass"];
+splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["stimulusIndex"];
 % splitFactors = ["outerRadius","chromaticClass","contrast"];
 % splitFactors = ["chromaticClass"];
@@ -706,8 +718,8 @@ splitFactors = ["stimulusClass"];
 % splitFactors = ["backgroundIntensity","spotIntensity"];
 % %
 % protocolID = "Doves Movie";
-protocolID = "Object Motion Texture";
-% protocolID = "Object Motion Dots";
+% protocolID = "Object Motion Texture";
+protocolID = "Object Motion Dots";
 % protocolID = "Single Spot";
 % protocolID = "Chromatic Spot";
 % protocolID = "Led Pulse";
@@ -818,7 +830,7 @@ elseif size(splitCell,2)>1
 else
     subtractSorter = 0;    
 end
-subtractSorter=0;
+subtractSorter=1;
 for o = 1:size(splitCell,2) - subtractSorter %-1 because last parameter split is x val
     for p = 1:size(splitCell{2,1},2)
         allSets(p,o) = splitCell{2,o}(1,p);       
@@ -1402,19 +1414,19 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 dataType = 1; %0 if currents
 currAnalysis = 'excitation';
 % currAnalysis = 'inhibition';
-splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
-% splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
+% splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
+splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
 
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
 %processing function
-subtractBGrate=1;
+subtractBGrate=0;
 
-desiredSTD =5;
+desiredSTD =6;
 
-protocolType = 'Oriented Bars';
+% protocolType = 'Oriented Bars';
 % protocolType = 'Oriented Bars Fixed';
-% protocolType = 'Chromatic Bars';
+protocolType = 'Chromatic Bars';
 
 splitCell = cell(2,length(splitFactors));
 
@@ -1593,7 +1605,9 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 %% MOVING BAR
 
 dataType = 1; %0 if currents
-splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation"]; colorBar = false;
+% splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation"]; colorBar = false;
+splitFactors = ["contrast","backgroundIntensity","speed","barSize","chromaticClass","secondBar","relativeOrientation","oppositePolarityBars","orientation"]; colorBar = false; multiBar = true;
+
 % splitFactors = ["barColor","barSize","speed","orientation"]; colorBar = true;
 %NOTE: last split is always X axis.  I think this is helpful because can be
 %specified by length function and don't need to cary another thing to
@@ -1605,10 +1619,12 @@ splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation
 leakC = 100;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 9;
+desiredSTD = 5.2;
 
 if colorBar
     desiredProtocol = 'Moving Chromatic Bar';
+elseif multiBar
+    desiredProtocol = 'Multi Moving Bars';
 else
     desiredProtocol = 'Moving Bar';
 end
@@ -1644,6 +1660,8 @@ for i = 1:length(epochs)
 if strcmp(displayName,desiredProtocol) && strcmp(egLabel,controlOrAlt)
                 for s=1:length(splitCell)  
                   if strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'double')
+                      stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
+                  elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'uint8')
                       stringedEntry = convertCharsToStrings(num2str(getfield(epochs(i).meta,splitFactors(s))));
                   elseif strcmp(class(getfield(epochs(i).meta,splitFactors(s))),'char')
                       stringedEntry = convertCharsToStrings(getfield(epochs(i).meta,splitFactors(s)));
@@ -1763,9 +1781,9 @@ params.saveGraph =0;
 %grating,bars
 params.stimName = 'moving bar';
 params.saveIter = 1;
-params.Region = 5000:10000;
-% params.Region = 13000:17000;
-% params.Region = 1:35000;
+% params.Region = 14500:16500;
+% params.Region = 17000:21000;
+params.Region = 7000:20000;
 timings = [preTime stimOrig tailTime];
 dataToAlign = orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% plottin' code

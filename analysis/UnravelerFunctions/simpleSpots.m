@@ -15,16 +15,17 @@ spotIntensityPlace = find(strcmp(analysisSplitters,"spotIntensity")==1);
 end
 
     for a = 1:size(indexHolder,2)
-        spotSizes = splitCell{2,size(splitCell,2)};
+        spotSizes = double(splitCell{2,size(splitCell,2)});
         spotSizes = spotSizes((indexHolder{2,a}));
          [spotSizes I] = sort(spotSizes);
          sortedIndex = indexHolder{2,a};
          sortedIndex = sortedIndex(I);  %sort indices like spotSizes (which are low to high)
-         
+      
          
          for b = 1:length(unique(spotSizes))
             uniqueSpotSizes = unique(spotSizes); %because I don't know how to index the unique function
             finalInd = find(spotSizes==uniqueSpotSizes(b));    
+            
             onResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),timings(1)*10:(timings(1)+timings(2))*10),2));
             offResp(b) = mean(sum(spikeMatrix(sortedIndex(finalInd),(timings(1)+timings(2))*10:sum(timings)*10),2)); 
             
@@ -45,7 +46,11 @@ end
             title(indexHolder{1,a})
             end
             
-            
+            spikingData(b,:) = mean(spikeMatrix(sortedIndex(finalInd),:),1);
+            figure(11); hold on
+            subplot(1,size(indexHolder,2),a)
+            plot(spikingData(b,:)+(1*(b-1)))
+            title(indexHolder{1,a})
             
          end
         
@@ -54,10 +59,15 @@ end
          
          figure(1) 
          
-        indexHolder
+     
+     if length(uniqueSpotSizes) ~= length(onResp)
+     onResp(length(uniqueSpotSizes)+1:end)=[];
+     offResp(length(uniqueSpotSizes)+1:end)=[];
+     end
         
          subplot(size(indexHolder,2),1,a)
-         if indexHolder{1,a}(spotIntensityPlace) <= 0
+         
+         if double(indexHolder{1,a}(spotIntensityPlace)) <= 0
              figure(1)
         plot(uniqueSpotSizes,onResp,'Color','r','LineWidth',2); hold on
         plot(uniqueSpotSizes,offResp,'Color','b','LineWidth',2);
@@ -93,6 +103,7 @@ end
 %         plot(fitX,fitY);
         
          else
+             
         plot(uniqueSpotSizes,onResp,'Color','b','LineWidth',2); hold on
         plot(uniqueSpotSizes,offResp,'Color','r','LineWidth',2);
         legend('On Response','Off Response')
@@ -101,6 +112,7 @@ end
         ylabel('spike count')
         else
         ylabel('pA')
+        
         end
         
 
@@ -109,7 +121,7 @@ end
       figure(2)
       
                
-         if indexHolder{1,a}(spotIntensityPlace) <= 0
+         if double(indexHolder{1,a}(spotIntensityPlace)) <= 0
         plot(uniqueSpotSizes,onResp,'Color','r','LineWidth',2); hold on
         plot(uniqueSpotSizes,offResp,'Color','b','LineWidth',2);
         legend('Off Response','On Response')

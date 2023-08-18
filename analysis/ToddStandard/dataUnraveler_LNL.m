@@ -1,7 +1,7 @@
 %% CHOOSE CELL TO LOAD
-exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\'; %new PC 
-experimentDate = '2023_0613';
-cellNum = 'Bc5_Fred';
+exportDirectory = getDirectory(); %new PC 
+experimentDate = '2023_0808';
+cellNum = 'Ac4';
 cd(strcat(exportDirectory,experimentDate)) 
 %20210910Fc1
 %% LOAD AND GRAB CRITICAL ELEMENTS
@@ -87,7 +87,7 @@ metaData = cellData(dNameLogical); %grab only protocol data
             
 %% Grab Spikes, 
 
-desiredSTD =2.7; %standard deviation used to detect spikes
+desiredSTD =4.5; %standard deviation used to detect spikes
 
 for k = 1:length(rawData)
     
@@ -153,7 +153,7 @@ egLabelCompare = "Control";
 noiseSplitter = strcmp(gaussianOrBinary,noiseClass);
 egSplitter = strcmp(egLabelCompare,epochLabel);
 splitter2 = 90;
-splitter3 = 175;
+splitter3 = 370;
 splitter4 = 2;
 splitter5 = 1;
 
@@ -268,7 +268,7 @@ noiseVars.type = gaussianOrBinary;
 noiseVars.contrast = 0.3333;
 timings = [250,10000,250]; % AUTOMATE THIS LATER
 frames = manookinlab.ovation.getFrameTimesFromMonitor(frameTimings(usableIndex,:), 10000, binRate);
-frameValues = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,4,double(string(seedList(usableIndex)))',frameDwell(usableIndex));
+frameValues = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),1000,frames,2,double(string(seedList(usableIndex)))',frameDwell(usableIndex));
 
 %% Generate Filter & NL (incl. modeled curves)
 % 

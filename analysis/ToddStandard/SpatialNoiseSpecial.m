@@ -1,8 +1,8 @@
 %% Spatial  Noise
 
 exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\';
-experimentDate = '2023_0613';
-cellNum = 'Ac2';
+experimentDate = '2023_0808';
+cellNum = 'Ac4';
 cd(strcat(exportDirectory,experimentDate))
 
 cd(strcat(exportDirectory,experimentDate)) 
@@ -19,9 +19,11 @@ cellData = epochs;
 
 
 splitFactors = ["stixelSize","chromaticClass","contrast"];
+% epochGroup = 'Split1';
 epochGroup = 'Control';
+% 
 
-desiredSTD = 7;
+desiredSTD = 5;
 
 splitCell = cell(2,length(splitFactors));
 
