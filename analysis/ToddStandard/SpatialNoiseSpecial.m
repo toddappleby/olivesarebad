@@ -2,7 +2,7 @@
 
 exportDirectory = 'C:\Users\reals\Documents\PhD 2021\ClarinetExports\';
 experimentDate = '2023_0808';
-cellNum = 'Ac4';
+cellNum = 'Ac2';
 cd(strcat(exportDirectory,experimentDate))
 
 cd(strcat(exportDirectory,experimentDate)) 

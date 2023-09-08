@@ -31,8 +31,8 @@ for m = 1 : length(seeds)length(seeds)
 % size(fv2)
 % size(fv1)
 % size(frameValues)
-%      frameValues = yellowFV;
-       frameValues = blueFV;
+     frameValues = yellowFV;
+%        frameValues = blueFV;
     
     if binsPerFrame > 1
         frameValues = upsampleFrames(frameValues,binsPerFrame);

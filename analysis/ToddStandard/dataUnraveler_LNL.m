@@ -1,7 +1,7 @@
 %% CHOOSE CELL TO LOAD
 exportDirectory = getDirectory(); %new PC 
-experimentDate = '2023_0808';
-cellNum = 'Ac4';
+experimentDate = '2023_0725';
+cellNum = 'Ac1';
 cd(strcat(exportDirectory,experimentDate)) 
 %20210910Fc1
 %% LOAD AND GRAB CRITICAL ELEMENTS
@@ -87,7 +87,7 @@ metaData = cellData(dNameLogical); %grab only protocol data
             
 %% Grab Spikes, 
 
-desiredSTD =4.5; %standard deviation used to detect spikes
+desiredSTD =6; %standard deviation used to detect spikes
 
 for k = 1:length(rawData)
     
@@ -142,8 +142,8 @@ plot(y)
 binaryIndex = contains(noiseClass,'binary')';
 gaussianIndex = contains(noiseClass,'gaussian')';
 % 
-% gaussianOrBinary = 'gaussian'; %choose your fighter
-gaussianOrBinary = 'binary';
+gaussianOrBinary = 'gaussian'; %choose your fighter
+% gaussianOrBinary = 'binary';
 
 egLabelCompare = "Control";
 % egLabelCompare = "AltCenter";
@@ -153,8 +153,8 @@ egLabelCompare = "Control";
 noiseSplitter = strcmp(gaussianOrBinary,noiseClass);
 egSplitter = strcmp(egLabelCompare,epochLabel);
 splitter2 = 90;
-splitter3 = 370;
-splitter4 = 2;
+splitter3 = 275;
+splitter4 = 1;
 splitter5 = 1;
 
     %typical sorters
@@ -277,6 +277,91 @@ colorSet = [1 0 0;0 0 1;0 0 0];
 lfilter=[]; 
 nonlinearityBins=100;
    stimDuration = preTime + (1 : stimTime);     
+    stimulus = frameValues(:, :);
+    responses = response(:, :);
+
+    lfilter = getLinearFilter(stimulus, responses, ... %
+        'analysisType', 'revcorr', ...
+        'fourierCorrection',false, ...
+        'binRate', binRate, ...
+        'filterTime', 0.5, ...
+        'frameRate', frameRate);
+    figure(44);hold on
+%     plot(lfilter(f,1:500))
+%     norm(lfilter(f,:))
+%     pause
+    lfilter = lfilter / norm(lfilter);
+   
+% for f = 1:3      
+% %     stimulus = frameValues(bgClassX==f, preTime+11:end);
+%     stimulus = frameValues(bgClassX==f, :);
+%     responses = response(bgClassX==f, :);
+% 
+%     lfilter(f,:) = getLinearFilter(stimulus, responses, ... %
+%         'analysisType', 'revcorr', ...
+%         'fourierCorrection',false, ...
+%         'binRate', binRate, ...
+%         'filterTime', 0.5, ...
+%         'frameRate', frameRate);
+%     figure(44);hold on
+% %     plot(lfilter(f,1:500))
+% %     norm(lfilter(f,:))
+% %     pause
+%     lfilter(f,:) = lfilter(f,:) / norm(lfilter(f,:));
+% end
+allFilters = lfilter;
+% lfilter = mean(lfilter,1); %without mean filter, NLs sometimes look different
+figure(5)
+plot(lfilter(1:500),'m','LineWidth',2)
+hold on
+% plot(allFilters(1,1:500),'--r')
+% plot(allFilters(2,1:500),'--b')
+% plot(allFilters(3,1:500),'--k')
+legend('AverageFilter','SequentialFilter','RandomFilter', 'StationaryFilter')
+
+title('sta')
+xlabel('ms')
+ylabel('contrast weight')
+for g = 1:3
+    
+    % nl starts here
+    Stim = frameValues(bgClassX==g,:);
+%     Stim = frameValues(bgClassX==g,preTime+11:end);
+    Resp = response(bgClassX==g,:);
+    lf = lfilter(1 : size(Stim,2));
+    Pred = zeros(size(Resp));
+        for p = 1 : size(Stim,1)
+            revcor = ifft( fft(Stim(p,:)) .* fft(lf) );
+            Pred(p,:) = real(revcor);
+            
+            Pred(p,:) = Pred(p,:)./std(Pred(p,:));
+        end
+    [xBin(g,:),yBin(g,:)] = binNonlinearity(Pred(:,stimDuration(501:end)),Resp(:,stimDuration(501:end)),nonlinearityBins);
+%  [xBin(f,:),yBin(f,:)] = binNonlinearity(Pred(:,stimDuration(1500:end)),Resp(:,stimDuration(1500:end)),nonlinearityBins);
+
+    figure(1)
+nlParams(g,:) = fitNonlinearityParams(xBin(g,:), yBin(g,:));
+% nlX(f,:) = linspace(-max(abs(xBin(f,:))),max(abs(xBin(f,:))),10000);
+% plot(nlX(f,:),outputNonlinearity(nlParams(f,:),nlX(f,:)))    
+plot(xBin(g,:),outputNonlinearity(nlParams(g,:),xBin(g,:)))    
+hold on
+
+figure(2)
+plot(xBin(g,:),yBin(g,:),'Color',colorSet(g,:))
+hold on
+    legend('Sequential','Random','Static')
+    ylabel('Spike Rate (Hz)')
+end
+
+% makeAxisStruct(gca,strtrim(['rawishNLs' experimentDate cellNum]))
+%% Generate Filter & NL (incl. modeled curves)
+% 
+
+colorSet = [1 0 0;0 0 1;0 0 0];
+lfilter=[]; 
+nonlinearityBins=100;
+   stimDuration = preTime + (1 : stimTime);     
+  
 for f = 1:3      
 %     stimulus = frameValues(bgClassX==f, preTime+11:end);
     stimulus = frameValues(bgClassX==f, :);
@@ -288,6 +373,10 @@ for f = 1:3
         'binRate', binRate, ...
         'filterTime', 0.5, ...
         'frameRate', frameRate);
+    figure(44);hold on
+%     plot(lfilter(f,1:500))
+%     norm(lfilter(f,:))
+%     pause
     lfilter(f,:) = lfilter(f,:) / norm(lfilter(f,:));
 end
 allFilters = lfilter;
@@ -335,6 +424,7 @@ hold on
 end
 
 % makeAxisStruct(gca,strtrim(['rawishNLs' experimentDate cellNum]))
+
 %% Verify Model -- go back to sorting code to get repeated seeds
 
 noiseVars = struct();

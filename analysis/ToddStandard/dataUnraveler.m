@@ -1,7 +1,7 @@
 %% load FT first, give different name --- #1
 % cd('C:\Users\reals\Documents\PhD 2021\ClarinetExports\2019_1107') %2019 1107 bc7 sbc
-cellDate = '2023_0607';
-cellNum = 'Ac1';
+cellDate = '2023_0808';
+cellNum = 'Ac2';
 cellName = strcat(cellDate,cellNum);
 
 loadDate = char(cellDate);
@@ -77,7 +77,7 @@ timings = [preTime stimOrig tailTime];
 
 logi = contrast == .05;
 logi2 = contrast == .2;
-[cSensitivity, ~, ~] = frequencyModulation(mean(psthMatrix(logi,5001:end ),1), 10000, 4, 'avg', 1, []);
+[cSensitivity, ~, ~] = frequencyModulation(mean(psthMatrix(logi2,5001:end ),1), 10000, 4, 'avg', 1, []);
 %% chirp regurgitation
 dataType = 1;
 clear epochStorage
@@ -377,14 +377,14 @@ runSplitter = ["radius"];
 controlOrAlt =  "Control";
 % controlOrAlt =  "NDF 4";
 % controlOrAlt =  "Wholecell_exc";
-% controlOrAlt =  "AltCenter2";
+% controlOrAlt =  "AltCenter";
 
 temporalStimType = 'pulse';
 
 
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD =5;
+desiredSTD =4.5;
 
 for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
@@ -707,10 +707,10 @@ timings = [preTime stimOrig tailTime];
 centeringBars(XspikeMatrix,YspikeMatrix,positionX,positionY,timings,tFrequency,sampleRate)
 %% Simple Response (Color spot and OMS)
 dataType = 1; 
-desiredSTD = 8;
+desiredSTD = 9;
 % % 
-% splitFactors = ["apertureRadius","stimulusClass"];
-splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
+splitFactors = ["apertureRadius","stimulusClass"];
+% splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["stimulusIndex"];
 % splitFactors = ["outerRadius","chromaticClass","contrast"];
 % splitFactors = ["chromaticClass"];
@@ -718,8 +718,8 @@ splitFactors = ["radius","splitContrasts","contrast","spaceConstant"];
 % splitFactors = ["backgroundIntensity","spotIntensity"];
 % %
 % protocolID = "Doves Movie";
-% protocolID = "Object Motion Texture";
-protocolID = "Object Motion Dots";
+protocolID = "Object Motion Grating";
+% protocolID = "Object Motion Dots";
 % protocolID = "Single Spot";
 % protocolID = "Chromatic Spot";
 % protocolID = "Led Pulse";
@@ -988,7 +988,7 @@ runSplitter = ["currentSpotSize"];
 
 leakThreshold = 200;
 
-desiredSTD =2;
+desiredSTD =7;
 % 
 splitCell = cell(2,length(splitFactors));
 
@@ -1412,8 +1412,8 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 
 %% Oriented Bars
 dataType = 1; %0 if currents
-currAnalysis = 'excitation';
-% currAnalysis = 'inhibition';
+% currAnalysis = 'excitation';
+currAnalysis = 'inhibition';
 % splitFactors = ["intensity","backgroundIntensity","barSize","orientation"];
 splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","orientation"];
 
@@ -1422,7 +1422,7 @@ splitFactors = ["contrast","backgroundIntensity","chromaticClass","barSize","ori
 %processing function
 subtractBGrate=0;
 
-desiredSTD =6;
+desiredSTD =9;
 
 % protocolType = 'Oriented Bars';
 % protocolType = 'Oriented Bars Fixed';
@@ -1434,11 +1434,12 @@ for g = 1:length(splitCell)
     splitCell{1,g} = splitFactors(g);
 end
 
-controlOrAlt = "Control";
+% controlOrAlt = "Control";
 % controlOrAlt = "NDF 4";  
-% controlOrAlt =  "AltCenter";
+controlOrAlt =  "AltCenter";
 
 % egLabelforWholeCell = "Wholecell_exc";
+% egLabelforWholeCell = "Control";
 
 count = 0;
 clear epochStorage;
@@ -1605,7 +1606,7 @@ orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,p
 %% MOVING BAR
 
 dataType = 1; %0 if currents
-% splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation"]; colorBar = false;
+% splitFactors = ["intensity","backgroundIntensity","speed","barSize","orientation"]; colorBar = false; multiBar=false;
 splitFactors = ["contrast","backgroundIntensity","speed","barSize","chromaticClass","secondBar","relativeOrientation","oppositePolarityBars","orientation"]; colorBar = false; multiBar = true;
 
 % splitFactors = ["barColor","barSize","speed","orientation"]; colorBar = true;
@@ -1619,7 +1620,7 @@ splitFactors = ["contrast","backgroundIntensity","speed","barSize","chromaticCla
 leakC = 100;
 splitCell = cell(2,length(splitFactors));
 
-desiredSTD = 5.2;
+desiredSTD = 6;
 
 if colorBar
     desiredProtocol = 'Moving Chromatic Bar';
@@ -1630,7 +1631,7 @@ else
 end
 
 
-% controlOrAlt = "Wholecell_exc";
+% controlOrAlt = "Whole cell_exc";
 controlOrAlt = "Control";
 
 % controlOrAlt = "AltCenter";
@@ -1781,9 +1782,9 @@ params.saveGraph =0;
 %grating,bars
 params.stimName = 'moving bar';
 params.saveIter = 1;
-% params.Region = 14500:16500;
-% params.Region = 17000:21000;
-params.Region = 7000:20000;
+% params.Region = 1:11200;
+params.Region = 11200:25000;
+% params.Region =1:20000;
 timings = [preTime stimOrig tailTime];
 dataToAlign = orientedStim(epochStorage,spikeMatrix,psthMatrix,timings,splitCell,indexHolder,params);
 %% plottin' code

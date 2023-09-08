@@ -31,7 +31,7 @@ for b = 1:size(indexHolder,2)
     
 
     for g = 1:length(xVarStatic)
-        
+        g
         if isnan(unique(str2double(xVar)))
             xVarLabel = unique(xVar);
         else

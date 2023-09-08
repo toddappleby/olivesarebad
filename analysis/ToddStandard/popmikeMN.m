@@ -26,8 +26,8 @@ count=0;
     cellTypeData = [];
     typeInd = 1; 
 % size(folderSet,3)
-includeTypes = [5 3 2 4 1];
-% includeTypes = [5];
+% includeTypes = [5 3 2 4 1];
+includeTypes = [1];
 maxFilterPerCell=[];
 minFilterPerCell=[];
 timeBetweenPeaksPerCell = [];
@@ -179,16 +179,30 @@ else
 end
 
 
-% % % %% for NL debuggin'
+% % %% for NL debuggin'
 
-%   figure(13)
-%   colororder({'b','r','k'})
-%   subplot(2,ceil(size(fileIndex,3)/2),d)
-%   plot(xBin',yBin')
+  figure(13)
+  colororder({'b','r','k'})
+  subplot(2,ceil(size(fileIndex,3)/2),d)
+  plot(xBin',yBin')
   
 % 
 
-
+if d == 16
+    figure(33)
+    plot(xBin',yBin')
+    figure(34)
+    plot(lfilter)
+    
+    for e = 1:(size(xBin,1))
+    nlParamsExample(e,:) = fitNonlinearityParams(xBin(e,:), yBin(e,:));
+ 
+    figure(35);hold on;plot(xBin(e,:),outputNonlinearity(nlParamsExample(e,:),xBin(e,:)),'--') 
+    
+    
+    end
+    
+end
 %%%%%% get spike rates
 
     if iscell(stimulusParams.response)
@@ -223,7 +237,7 @@ multiCellStatic(d) = meanStatic;
                  mParams = fitMultiVarParams(xBin([1,2,3],51:100),yBin([1,2,3],51:100),1,starterParams);
                  outNLHZOn = multiHZNL(mParams,xBin([1,2,3],51:100));
 
-                 figure;colororder(['b';'r';'k']);plot(xBin(:,51:100)',outNLHZOn','--');hold on;plot(xBin(:,51:100)',yBin(:,51:100)')
+%                  figure;colororder(['b';'r';'k']);plot(xBin(:,51:100)',outNLHZOn','--');hold on;plot(xBin(:,51:100)',yBin(:,51:100)')
                  
 
                  mParamsHz = fitMultiVarParams(xBin([1,2,3],1:50),yBin([1,2,3],1:50),1,starterParams);
@@ -234,16 +248,16 @@ multiCellStatic(d) = meanStatic;
                  
                  
 
-                 colororder(['b';'r';'k']);plot(xBin(:,1:50)',outNLHZOff','--');hold on;plot(xBin(:,1:50)',yBin(:,1:50)')
-                 title('Broad Thorny NLs w/ Separate On/Off Model (XshiftOnly)')
-                 xlabel('Spike Rate (Hz)')
-                 ylabel('Input')
+%                  colororder(['b';'r';'k']);plot(xBin(:,1:50)',outNLHZOff','--');hold on;plot(xBin(:,1:50)',yBin(:,1:50)')
+%                  title('Broad Thorny NLs w/ Separate On/Off Model (XshiftOnly)')
+%                  xlabel('Spike Rate (Hz)')
+%                  ylabel('Input')
+%                  
                  
-                 
-                 figure;colororder(['b';'r';'k']);plot(xBin(:,1:50)',outNLGainOff','--');hold on;plot(xBin(:,1:50)',yBin(:,1:50)')
-                 title('Broad Thorny NLs w/ Separate On/Off Model (XshiftOnly)')
-                 xlabel('Spike Rate (Hz)')
-                 ylabel('Input')
+%                  figure;colororder(['b';'r';'k']);plot(xBin(:,1:50)',outNLGainOff','--');hold on;plot(xBin(:,1:50)',yBin(:,1:50)')
+%                  title('Broad Thorny NLs w/ Separate On/Off Model (XshiftOnly)')
+%                  xlabel('Spike Rate (Hz)')
+%                  ylabel('Input')
                 
                 mseErrorHz(d) = immse(yBin(2,1:50),outNLHZOff(2,:));
                 mseErrorGain(d) = immse(yBin(2,1:50),outNLGainOff(2,:));
@@ -263,8 +277,15 @@ multiCellStatic(d) = meanStatic;
               mParamsHz = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),1,starterParams);
               outNLHZ = multiHZNL(mParamsHz,xBin([1,2,3],:));
               
+              
+              
               mParamsGain = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),0,starterParams);
               outNLGain = multiGainNL(mParamsGain,xBin([1,2,3],:));
+              
+              if d==16
+                  figure(74);colororder(['b';'r';'k']);plot(xBin',outNLHZ','--');
+                  figure(75);colororder(['b';'r';'k']);plot(xBin',outNLGain','--');
+              end    
               
               mseErrorHz(d) = immse(yBin(2,:),outNLHZ(2,:));
               mseErrorGain(d) = immse(yBin(2,:),outNLGain(2,:));
@@ -361,13 +382,20 @@ errorRandom(c) = sem(randChange);
 %%%%%%%%%%%%%%%%%%% UNITY LINE GRAPHS
 mseErrorHzMean = mean(mseErrorHz);
 mseErrorGainMean = mean(mseErrorGain);
+
+mseErrorHzError(c) = sem(mseErrorHz);
+mseErrorGainError(c) = sem(mseErrorGain);
+
 colorSet = ['b.'; 'r.'];
 colorSet2 = ['b*'; 'r*'];
 
-figure(98)
+figure(98);hold on
 dotSize = 500;
 scatter(mseErrorHz,mseErrorGain,dotSize,'k.')
-hold on
+% line([0 20],[0 20],'Color','k')
+axis([0 19 0 19])
+
+figure(92);hold on
 scatter(mseErrorHzMean,mseErrorGainMean,dotSize*3,'k+')
 line([0 10],[0 10],'Color','k')
 axis([0 10 0 10])
@@ -418,9 +446,13 @@ axis([0 10 0 10])
        plot(count,mean(pcChangeHzSequential),'r.','MarkerSize',30)
        hold on
        plot(count,pcChangeHzSequential,'ro', 'MarkerSize',5)
-
-
        
+
+      errorHzSeq(c) = sem(pcChangeHzSequential);
+      
+      
+    
+        
 
 
        pcChangeHzRandom =  (diff(hzRSE(:,[1 3]),1,2)./sum(hzRSE(:,[1 3]),2))*100;
@@ -432,7 +464,7 @@ axis([0 10 0 10])
        
 
     
-
+errorHzRand(c) = sem(pcChangeHzRandom);
     
        
       figure(31) %seq static
@@ -442,7 +474,7 @@ axis([0 10 0 10])
        plot(count,pcChangeGainSequential,'ro','MarkerSize',5)
        
        
-
+errorGainSeq(c) = sem(pcChangeGainSequential);
        
 
        pcChangeGainRandom =  (diff(gainRSE(:,[3 1]),1,2)./sum(gainRSE(:,[3 1]),2))*100;
@@ -453,7 +485,7 @@ axis([0 10 0 10])
        title('Extent of Gain Parameter Change Relative to Static Condition')
 
            
-
+  errorGainRand(c) = sem(pcChangeGainRandom);
 
 end
 

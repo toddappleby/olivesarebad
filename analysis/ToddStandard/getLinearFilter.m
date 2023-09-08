@@ -35,6 +35,7 @@ function [lfilter,mfilter,pp_exp,negLexp,Cexp] = getLinearFilter(stimulus, respo
     end
 
     % Make it a unit vector.
+    disp(norm(lfilter))
     lfilter = lfilter / norm(lfilter);
 
     if strcmpi(analysisType,'mle')

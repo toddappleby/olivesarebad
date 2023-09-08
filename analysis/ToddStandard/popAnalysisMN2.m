@@ -33,7 +33,7 @@ spikeMeans = cell(13,size(folderSet,3));
 count=0;
 createSharableFormat = 1;
 % includeTypes =[13 12 8 7];
-includeTypes = 13;
+includeTypes = 3;
 %
 for c = includeTypes
  
@@ -231,16 +231,24 @@ gainRSE = [];
              stimulus = frameSeq(seed(indices) ~= 1, metaData.preTime+1:end);
              responses = response(seed(indices) ~= 1, :);
                 
-            lfilter(f,:) = getLinearFilter(stimulus, responses, ...
+            lfilter = getLinearFilter(stimulus, responses, ...
                 'analysisType', 'revcorr', ...
                 'fourierCorrection',false, ...
                 'binRate', binRate, ...
                 'filterTime', 0.5, ...
                 'frameRate', metaData.frameRate);
-            lfilter(f,:) = lfilter(f,:) / norm(lfilter(f,:));
+            lfilter = lfilter / norm(lfilter);
+            
+%                 lfilter(f,:) = getLinearFilter(stimulus, responses, ...
+%                 'analysisType', 'revcorr', ...
+%                 'fourierCorrection',false, ...
+%                 'binRate', binRate, ...
+%                 'filterTime', 0.5, ...
+%                 'frameRate', metaData.frameRate);
+%             lfilter(f,:) = lfilter(f,:) / norm(lfilter(f,:));
             end
            allFilters = lfilter;
-lfilter = mean(lfilter,1); %without mean filter, NLs sometimes look different
+% lfilter = mean(lfilter,1); %without mean filter, NLs sometimes look different
 % figure(5)
 % plot(lfilter(1:500),'m','LineWidth',2)
 % hold on
