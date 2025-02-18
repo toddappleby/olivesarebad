@@ -33,7 +33,7 @@ spikeMeans = cell(13,size(folderSet,3));
 count=0;
 createSharableFormat = 1;
 % includeTypes =[13 12 8 7];
-includeTypes = 3;
+includeTypes = 7;
 %
 for c = includeTypes
  
@@ -74,8 +74,8 @@ pcChangeGainRandom = [];
 hzRSE = [];
 gainRSE = [];
 
-        for d = 1:size(fileIndex,3)
-%           for d = 22:22
+%         for d = 1:size(fileIndex,3)
+          for d = 1:1
            outI = []; 
            
          
@@ -164,6 +164,14 @@ gainRSE = [];
              end
            end
            
+           if strcmp(cellType,'ParasolON') 
+               switch cellName
+                   case '20200108Bc2_MN.mat'
+                       logicalMatrix = contains(matrixSplit,["gaussian", "Control", "250", "90", "stationary","sequential","random"]);
+                    outI = [find(sum(logicalMatrix,2)==5)];
+               end
+           end
+           
            if strcmp(cellType,'Lbs') 
              switch cellName
                  case '20220406Ac1_MN.mat'
@@ -219,7 +227,7 @@ gainRSE = [];
               cellName
                 frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,4,seed(indices),frameDwell);
           else
-                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,2,seed(indices),frameDwell);
+                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,1,seed(indices),frameDwell);
           end
                 response = zeros(size(indices,1),metaData.stimTime+metaData.tailTime);
                 for ff = 1:length(indices)
@@ -278,7 +286,7 @@ gainRSE = [];
           if strcmp(cellType,'BroadThorny') && strcmp(cellName,'20230613Bc5_MN.mat') || strcmp(cellName,'20200713Bc3_MN.mat')
                 frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,4,seed(indices),frameDwell);
           else
-                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,2,seed(indices),frameDwell);
+                frameSeq = getTemporalNoiseFramesClarinet(noiseVars,timings(1),timings(2),timings(3),binRate,frames,1,seed(indices),frameDwell);
           end                
                 response = zeros(size(indices,1),metaData.stimTime+metaData.tailTime);
                 for gg = 1:length(indices)
