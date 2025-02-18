@@ -19,7 +19,6 @@ tFreq= find(strcmp(analysisSplitters,"temporalFrequency")==1);
 figure(10); clf; hold on
 
 if strcmp(params.stimName, 'Grating')
-
     for a = 1:size(indexHolder,2)
         orientations = str2double(splitCell{2,size(splitCell,2)});
         orientations = orientations((indexHolder{2,a}));
@@ -41,7 +40,11 @@ collectIndices = sortedIndex(finalInd);
                 holder(spikeMatrix(collectIndices(uu),:)>0)=sampleRate; %mike does this in his online analysis.  magnitude post binning is v small when this not done
                 binnedData = binData(holder(stimStart:stimEnd),100,sampleRate);
                 [F, phase] = frequencyModulation(binnedData, ...
-                100, double(indexHolder{1,a}(1,tFreq)), 'avg', 1:2, []);
+                  100, double(indexHolder{1,a}(1,tFreq)), 'avg', 1:2, []);
+
+%                     100, 4, 'avg', 1:2, []);
+                
+            
                 collectF1 = [collectF1; F(1)]; 
                 
                   
@@ -335,20 +338,29 @@ for a = 1:size(indexHolder,2)
         
             uniqueOrientations = unique(orientations); %because I don't know how to index the unique function
             finalInd = find(orientations==uniqueOrientations(u));
-            meanSpikeRate = sum(spikeMatrix(sortedIndex(finalInd),params.Region),2)/((max(params.Region)-min(params.Region))*1e-4);
+%             meanSpikeRate = sum(spikeMatrix(sortedIndex(finalInd),params.Region),2)/((max(params.Region)-min(params.Region))*1e-4);
 %             meanPSTH = max(psthMatrix(sortedIndex(finalInd),params.Region)-max(psthMatrix(sortedIndex(finalInd),1:timings(1)*10),[],2),0);
             
-             
-            baselineSubtractedSpikeRate = meanSpikeRate - sum(spikeMatrix(sortedIndex(finalInd),1:timings(1)*10),2)/(timings(1)*1e-3);
+            spRatePreTime = sum(spikeMatrix(sortedIndex(finalInd),1:5000),2)/(timings(1)*1e-3) %sp/sec 
+            spRateStimTime = sum(spikeMatrix(sortedIndex(finalInd),params.Region),2)/((length(params.Region)*1e-4)) %sp/sec
+%             spRateSubtracted = spRateStimTime - (spRatePreTime*((timings(1)+timings(2))/timings(1))) % multiply spRatePreTime to match total time used to sum collect spikes for polar plot (equivalent of subtracting bg rate from each collected 500 ms of spikes)
+            spRateSubtracted = spRateStimTime - spRatePreTime;
+            spRateSubtracted(spRateSubtracted<0) = 0;
+           
+            resp(u)=mean(spRateSubtracted);
+            
+
+%             baselineSubtractedSpikeRate = meanSpikeRate - sum(spikeMatrix(sortedIndex(finalInd),1:timings(1)*10),2)/(timings(1)*1e-3);
 %                 resp(u) = sum(mean(meanPSTH)); %psth baseline subtracted
 %             resp(u)= mean(sum(spikeMatrix(sortedIndex(finalInd),params.Region),2))%spikerate no subtraction
-            resp(u)= mean(max(baselineSubtractedSpikeRate,0)); %spike rate baseline subtracted
-            
+%             resp(u)= mean(max(baselineSubtractedSpikeRate,0)); %spike rate baseline subtracted
+%             resp(u)=spRateFinal(u);
             
             %plot traces
             if size(indexHolder,2)>8 && a<=size(indexHolder,2)/2
-            psthData(u,:) = max(mean(psthMatrix(sortedIndex(finalInd),:),1) - max(mean(psthMatrix(sortedIndex(finalInd),1:5000),1)),0);
-                    
+%             psthData(u,:) = max(mean(psthMatrix(sortedIndex(finalInd),:),1) - max(mean(psthMatrix(sortedIndex(finalInd),1:5000),1)),0);
+
+             psthData(u,:) = mean(max(psthMatrix(sortedIndex(finalInd),:) - max(psthMatrix(sortedIndex(finalInd),1:5000),[],2),0),1);       
                         
             figure(99); hold on
             subplot(1,ceil(size(indexHolder,2)/2),a)
