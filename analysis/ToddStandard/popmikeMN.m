@@ -3,9 +3,7 @@
 exportFolder = getDirectory();
 protocolToAnalyze = 'Motion And Noise_Mike';
 typesFolder = strcat(exportFolder,protocolToAnalyze,'/','celltypes/');
-
 cd(typesFolder)
-
 dataDir = dir;
 %figure out which folders start with 2! (data folders), then create array of
 %folder names
@@ -27,7 +25,7 @@ count=0;
     typeInd = 1; 
 % size(folderSet,3)
 % includeTypes = [5 3 2 4 1];
-includeTypes = [1];
+includeTypes = [4];
 maxFilterPerCell=[];
 minFilterPerCell=[];
 timeBetweenPeaksPerCell = [];
@@ -70,8 +68,8 @@ for c = includeTypes
     initialSlope = [];
     
 
-    
-        for d = 1:size(fileIndex,3)
+    for d = 1:size(fileIndex,3)
+%         for d = 6:6
            
 
          load(strtrim(fileIndex(:,:,d)))
@@ -120,29 +118,35 @@ for c = includeTypes
 % %                 nlParams(g,:) = models.ln.fitNonlinearityParams(xBin(g,:), yBin(g,:));
 %                 prediction(indices,:) = P;
 % 
-if strcmp(analysisParams.classLabels(1),'random')
-        
-xBin(1,:) = analysisParams.xBin(1,:);
-yBin(1,:) = analysisParams.yBin(1,:);
-xBin(2,:)=analysisParams.xBin(2,:);
-yBin(2,:)=analysisParams.yBin(2,:);
-xBin(3,:)=analysisParams.xBin(3,:);
-yBin(3,:)=analysisParams.yBin(3,:);
-else
-xBin(2,:) = analysisParams.xBin(1,:);
-yBin(2,:) = analysisParams.yBin(1,:);
-xBin(1,:)=analysisParams.xBin(2,:);
-yBin(1,:)=analysisParams.yBin(2,:);
-xBin(3,:)=analysisParams.xBin(3,:);
-yBin(3,:)=analysisParams.yBin(3,:);
-    
+
+% silly if/else statement but it's what I used
+if strcmp(analysisParams.classLabels(1),'random') %most files have random as row 1 because of how stimulus is written.  I kept that format in analysis     
+    xBin(1,:) = analysisParams.xBin(1,:);
+    yBin(1,:) = analysisParams.yBin(1,:);
+    xBin(2,:)=analysisParams.xBin(2,:);
+    yBin(2,:)=analysisParams.yBin(2,:);
+    xBin(3,:)=analysisParams.xBin(3,:);
+    yBin(3,:)=analysisParams.yBin(3,:);
+else %this puts the random condition as first row in array for the few cases where motion is first row (b/c of early stim versions) Ultimately, 1 = random 2 = motion 3 = static
+    xBin(2,:) = analysisParams.xBin(1,:);
+    yBin(2,:) = analysisParams.yBin(1,:);
+    xBin(1,:)=analysisParams.xBin(2,:);
+    yBin(1,:)=analysisParams.yBin(2,:);
+    xBin(3,:)=analysisParams.xBin(3,:);
+    yBin(3,:)=analysisParams.yBin(3,:); 
 end
+
+
 
 % % % %% for TF gazing
 
-% figure(12)
-% subplot(2,ceil(size(fileIndex,3)/2),d)
-% plot(analysisParams.lfilter(1:500))
+figure(12)
+subplot(2,ceil(size(fileIndex,3)/2),d)
+plot(analysisParams.lfilter(1:300))
+
+figure(14)
+hold on
+plot(analysisParams.lfilter(1:100))
 
 lfilter=analysisParams.lfilter(1:500);
 
@@ -229,6 +233,7 @@ multiCellStatic(d) = meanStatic;
 %%%%%
                 %go with 1 being random, 2 sequential, 3 static
               starterParams = [.2,-1.5];
+           
 
                 %All
                
@@ -282,9 +287,9 @@ multiCellStatic(d) = meanStatic;
               mParamsGain = fitMultiVarParams(xBin([1,2,3],:),yBin([1,2,3],:),0,starterParams);
               outNLGain = multiGainNL(mParamsGain,xBin([1,2,3],:));
               
-              if d==16
-                  figure(74);colororder(['b';'r';'k']);plot(xBin',outNLHZ','--');
-                  figure(75);colororder(['b';'r';'k']);plot(xBin',outNLGain','--');
+              if d==6
+                  figure(74);colororder(['b';'r';'k']);plot(xBin',outNLHZ','--',xBin',yBin');
+                  figure(75);colororder(['b';'r';'k']);plot(xBin',outNLGain','--',xBin',yBin');
               end    
               
               mseErrorHz(d) = immse(yBin(2,:),outNLHZ(2,:));
@@ -383,8 +388,8 @@ errorRandom(c) = sem(randChange);
 mseErrorHzMean = mean(mseErrorHz);
 mseErrorGainMean = mean(mseErrorGain);
 
-mseErrorHzError(c) = sem(mseErrorHz);
-mseErrorGainError(c) = sem(mseErrorGain);
+mseErrorHzError(d) = sem(mseErrorHz);
+mseErrorGainError(d) = sem(mseErrorGain);
 
 colorSet = ['b.'; 'r.'];
 colorSet2 = ['b*'; 'r*'];
@@ -393,7 +398,7 @@ figure(98);hold on
 dotSize = 500;
 scatter(mseErrorHz,mseErrorGain,dotSize,'k.')
 % line([0 20],[0 20],'Color','k')
-axis([0 19 0 19])
+axis([0 25 0 25])
 
 figure(92);hold on
 scatter(mseErrorHzMean,mseErrorGainMean,dotSize*3,'k+')
