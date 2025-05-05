@@ -37,7 +37,7 @@ globalError = [];
 surroundError = [];
 
 % size(folderSet,3)
-for c = 6:6 
+for c = 5:5 
 
 cd(strcat(typesFolder,folderSet(:,:,c)))
 
@@ -102,7 +102,7 @@ surroundForShow=[];
 %          end
         end
         
-        
+        pause
         fullDist=[];
         fullDist = [centerMeanType; diffMeanType; globalMeanType; surroundMeanType];
         normDist = fullDist./max(fullDist);
@@ -167,7 +167,6 @@ end
   normGlobalErr = sem(normGlobal);
   
   %% we could do the index instead
-   meanMatrix = [centerMeanType;diffMeanType;globalMeanType];
   
   diffIndex = (meanMatrix(2,:) - meanMatrix(1,:)) ./ (meanMatrix(2,:) + meanMatrix(1,:));
   synchIndex = (meanMatrix(3,:) - meanMatrix(1,:)) ./ (meanMatrix(3,:) + meanMatrix(1,:));
