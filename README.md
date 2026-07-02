@@ -1,1 +1,1 @@
-# Scripts/Analyses used during my PhD
+# Scripts & analyses used during my PhD
